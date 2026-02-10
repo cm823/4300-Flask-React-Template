@@ -1,0 +1,148 @@
+.full-body-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  min-height: 100vh;
+  background-color: #ffffff;
+}
+
+.top-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2rem;
+  width: 100%;
+  max-width: 600px;
+}
+
+.google-colors {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  font-family: 'Kanit', sans-serif;
+}
+
+#google-4 {
+  color: #4285F4;
+  font-size: 4rem;
+  font-weight: 700;
+}
+
+#google-3 {
+  color: #EA4335;
+  font-size: 4rem;
+  font-weight: 700;
+}
+
+#google-0-1 {
+  color: #FBBC04;
+  font-size: 4rem;
+  font-weight: 700;
+}
+
+#google-0-2 {
+  color: #34A853;
+  font-size: 4rem;
+  font-weight: 700;
+}
+
+.input-box {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  border: 1px solid #dfe1e5;
+  border-radius: 24px;
+  cursor: text;
+  transition: box-shadow 0.2s;
+}
+
+.input-box:hover,
+.input-box:focus-within {
+  box-shadow: 0 1px 6px rgba(32, 33, 36, 0.28);
+  border-color: rgba(223, 225, 229, 0);
+}
+
+.input-box img {
+  width: 20px;
+  height: 20px;
+  margin-right: 1rem;
+  opacity: 0.6;
+}
+
+.input-box input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  font-family: 'Open Sans', sans-serif;
+}
+
+.input-box input::placeholder {
+  color: #9aa0a6;
+}
+
+#answer-box {
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.episode-item {
+  padding: 1.5rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.episode-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.episode-title {
+  font-size: 1.5rem;
+  color: #1a73e8;
+  margin-bottom: 0.75rem;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.episode-desc {
+  font-size: 1rem;
+  color: #3c4043;
+  line-height: 1.6;
+  margin-bottom: 0.75rem;
+}
+
+.episode-rating {
+  font-size: 0.9rem;
+  color: #5f6368;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .google-colors h1 {
+    font-size: 3rem;
+  }
+
+  .top-text {
+    padding: 0 1rem;
+  }
+
+  .input-box {
+    padding: 0.5rem 1rem;
+  }
+
+  .episode-item {
+    padding: 1rem;
+  }
+
+  .episode-title {
+    font-size: 1.25rem;
+  }
+}

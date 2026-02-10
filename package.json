@@ -1,0 +1,16 @@
+{
+  "name": "4300-flask-react-typescript-template",
+  "version": "1.0.0",
+  "description": "Flask + React + TypeScript Template for CS/INFO 4300",
+  "scripts": {
+    "install-all": "pip install -r requirements.txt && cd frontend && npm install",
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "python app.py"
+  },
+  "keywords": [
+    "flask",
+    "react",
+    "template"
+  ]
+}
