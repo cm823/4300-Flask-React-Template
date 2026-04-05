@@ -6,8 +6,8 @@ To enable AI chat, set USE_LLM = True below. See llm_routes.py for AI code.
 import json
 import os
 from flask import send_from_directory, request, jsonify
-from models import db, Postings
-from utils import generate_rabbit_hole, load_data
+from models import db, Postings, Categories
+from utils import generate_rabbit_hole, load_data, generate_rabbit_hole_2
 
 
 # ── AI toggle ────────────────────────────────────────────────────────────────
@@ -45,12 +45,8 @@ def register_routes(app):
         if not start_article and not keywords:
             return jsonify([])
         
-        pathway = generate_rabbit_hole(
-            start_article=start_article,
-            additional_keywords=keywords,
-            postings_model=Postings,
-            path_length=5,
-            diversity_lambda=1,
+        pathway = generate_rabbit_hole_2(
+            start_article, Postings, Categories
         )
         return jsonify(pathway)
     

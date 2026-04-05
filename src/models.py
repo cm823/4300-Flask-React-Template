@@ -6,3 +6,8 @@ class Postings(db.Model):
     __tablename__ = 'postings' 
     term_id = db.Column(db.Integer, primary_key=True) 
     postings = db.Column(db.LargeBinary, nullable=False)
+
+class Categories(db.Model):
+    __tablename__ = 'categories'
+    term_id = db.Column(db.Integer, primary_key=True)
+    postings = db.Column(db.LargeBinary, nullable=False)
