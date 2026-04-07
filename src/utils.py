@@ -55,8 +55,8 @@ def load_data():
     global DOC_MAP_CATEGORIES, REVERSE_DOC_MAP_CATEGORIES, WORD_MAP_CATEGORIES
     doc_path_postings = os.path.join(DATA_DIR, "doc_map_postings.json")
     word_path_postings = os.path.join(DATA_DIR, "word_map_postings.json")
-    doc_path_categories = os.path.join(DATA_DIR, "doc_path_categories.json")
-    word_path_categories = os.path.join(DATA_DIR, "word_path_categories.json")
+    doc_path_categories = os.path.join(DATA_DIR, "doc_map_categories.json")
+    word_path_categories = os.path.join(DATA_DIR, "word_map_categories.json")
 
     try:
         with open(doc_path_postings, "r") as f:
@@ -65,14 +65,14 @@ def load_data():
 
     except FileNotFoundError as e:
         print(e)
-        print("Error: boi pls put doc_map.json in <root>/data")
+        print("Error: postings doc map not found")
 
     try:
         with open(word_path_postings, "r") as f:
             WORD_MAP_POSTINGS = json.load(f)
     except FileNotFoundError as e:
         print(e)
-        print("Error: pls have the world_map.json in the data folder!")
+        print("Error: postings word map not found")
 
     try:
         with open(doc_path_categories, "r") as f:
@@ -80,14 +80,14 @@ def load_data():
             REVERSE_DOC_MAP_CATEGORIES = {wiki_id: title for title, wiki_id in DOC_MAP_POSTINGS.items()}
     except FileNotFoundError as e:
         print(e)
-        print("Error: pls have the world_map.json in the data folder!")
+        print("Error: categories doc map not found")
 
     try:
-        with open(word_path_postings, "r") as f:
+        with open(word_path_categories, "r") as f:
             WORD_MAP_CATEGORIES = json.load(f)
     except FileNotFoundError as e:
         print(e)
-        print("Error: pls have the world_map.json in the data folder!")
+        print("Error: categories word map not found")
 
 
 
@@ -181,7 +181,7 @@ def generate_rabbit_hole(start_article, additional_keywords, postings_model, pat
     return res
 
 
-def generate_rabbit_hole_2(start_article, postings_model, categories_model, path_length=5, alpha=0.3):
+def generate_rabbit_hole_2(start_article, postings_model, categories_model, path_length=5, alpha=0.67):
     tokens = stem_tokenizer(start_article)
     unique_tokens = list(set(tokens))
 
@@ -189,7 +189,10 @@ def generate_rabbit_hole_2(start_article, postings_model, categories_model, path
     vocab_size = len(unique_tokens)
 
     postings_scores = defaultdict(float)
+    postings_token_counts = defaultdict(int)
+
     categories_scores = defaultdict(float)
+    categories_token_counts = defaultdict(int)
 
     for token in unique_tokens:
         term_id_posting = WORD_MAP_POSTINGS.get(token)
@@ -202,6 +205,7 @@ def generate_rabbit_hole_2(start_article, postings_model, categories_model, path
 
                 for doc_id, score in decoded:
                     postings_scores[doc_id] += score
+                    postings_token_counts[doc_id] += 1
         if term_id_category:
             record = categories_model.query.filter_by(term_id=term_id_category).first()
             if record and record.postings:
@@ -210,24 +214,31 @@ def generate_rabbit_hole_2(start_article, postings_model, categories_model, path
 
                 for doc_id, score in decoded:
                     categories_scores[doc_id] += score
+                    categories_token_counts[doc_id] += 1
 
     final_scores = defaultdict(float)
     for doc_id, score in postings_scores.items():
-        final_scores[doc_id] += score * alpha
+        title = REVERSE_DOC_MAP_POSTINGS.get(doc_id, f"Unknown ID {doc_id}")
+        final_scores[title] += score * alpha * (postings_token_counts[doc_id] ** 2)
 
     for doc_id, score in categories_scores.items():
-        final_scores[doc_id] += score * (1 - alpha)
+        title = REVERSE_DOC_MAP_CATEGORIES.get(doc_id, f"Unknown ID {doc_id}")
+        final_scores[title] += score * (1 - alpha) * (categories_token_counts[doc_id] ** 2)
 
     sorted_ids = sorted(final_scores.items(), key=lambda x: x[1], reverse=True)
 
     res = []
-    for i in range(path_length):
-        doc_id, score = sorted_ids[i]
-        title = REVERSE_DOC_MAP_POSTINGS.get(doc_id, f"Unknown ID {doc_id}")
-        res.append({
-            "id": doc_id,        # already IS the wiki ID
-            "title": title,
-            "score": round(score, 2)
-        })
+    print(sorted_ids[:100])
+    i = 0
+    while len(res) < path_length:
+        title, score = sorted_ids[i]
+        doc_id = DOC_MAP_POSTINGS.get(title, f"Unknown Article {title}")
+        if not title.startswith("Unknown ID"):
+            res.append({
+                "id": doc_id,        # already IS the wiki ID
+                "title": title,
+                "score": round(score, 2)
+            })
+        i += 1
     return res
 
