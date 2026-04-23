@@ -461,7 +461,7 @@ def generate_rabbit_hole_svd(start_article, path_length=5, num_branches=3):
                 text = ""
             for dim, score in top_q_dims:
                 dim_names.append(dimension_themes[dim])
-                dim_scores.append(float(dims[dim][0]))
+                dim_scores.append(float(dims[dim][1]))
             temp.append(
                 {
                     "id": int(node),
@@ -594,7 +594,7 @@ def generate_rabbit_hole_combined(start_article, additional_keywords, postings_m
         dim_scores = []
         for dim, score in top_q_dims:
             dim_names.append(dimension_themes[dim])
-            dim_scores.append(float(dims[dim][0]))
+            dim_scores.append(float(dims[dim][1]))
         result["dimensions"] = dim_names
         result["dimensionScores"] = dim_scores
         print(result)
