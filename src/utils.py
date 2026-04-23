@@ -431,8 +431,7 @@ def generate_rabbit_hole_svd(start_article, path_length=5, num_branches=3):
     for i in range(0, path_length * num_branches, path_length):
         nodes = top_idx[i:i+path_length]
         temp = []
-        top_q_dims = top_query_dimensions(q_emb)
-        dim_ids = [i[0] for i in top_q_dims]
+        top_q_dims = top_query_dimensions(q_emb, top_k=6)
         dim_names = []
         dim_scores = []
         for dim, score in top_q_dims:
@@ -451,7 +450,7 @@ def generate_rabbit_hole_svd(start_article, path_length=5, num_branches=3):
         })
         for node in nodes:
             doc_vec = TERM_EMBEDDINGS @ (SINGULAR_VALUES * DOC_EMBEDDINGS[node, :])
-            dims = top_query_dimensions(doc_vec @ TERM_EMBEDDINGS, k=100)
+            dims = top_query_dimensions(doc_vec @ TERM_EMBEDDINGS, top_k=100)
             dims.sort(key=lambda x: x[0])
             dim_names = []
             dim_scores = []
@@ -460,9 +459,9 @@ def generate_rabbit_hole_svd(start_article, path_length=5, num_branches=3):
                 text = Articles.query.filter_by(article_name=title).first().article_text
             except Exception as e:
                 text = ""
-            for dim in dim_ids:
+            for dim, score in top_q_dims:
                 dim_names.append(dimension_themes[dim])
-                dim_scores.append(float(dims[dim[1]]))
+                dim_scores.append(float(dims[dim][0]))
             temp.append(
                 {
                     "id": int(node),
@@ -491,17 +490,19 @@ def generate_rabbit_hole_combined(start_article, additional_keywords, postings_m
     vec = gen_query_vec(start_article) @ TERM_EMBEDDINGS
 
     vec /= np.linalg.norm(vec) + 1e-8
-    # print("beginning generating rabbit hole")
-    # doc_cos_results = generate_rabbit_hole(
-    #     start_article, additional_keywords, postings_model,
-    #     path_length=35, num_branches=num_branches, randomize=False)[0]
+
+    top_q_dims = top_query_dimensions(vec, top_k=6)
+    dim_names = []
+    dim_scores = []
+    for dim, score in top_q_dims:
+        if dimension_themes[dim] not in dim_names:
+            dim_names.append(dimension_themes[dim])
+            dim_scores.append(float(score))
 
     tokens = stem_tokenizer(start_article)
     unique_tokens = list(set(tokens))
 
-
     doc_scores = defaultdict(float)
-
 
     for token in unique_tokens:
         print(token)
@@ -550,6 +551,7 @@ def generate_rabbit_hole_combined(start_article, additional_keywords, postings_m
 
     for doc in doc_cos_results:
         svd_id = DOC_IDS_SVD_REVERSE[doc['title']]
+        doc["id"] = svd_id
         doc_idxs.append(svd_id)
 
     doc_vecs = DOC_EMBEDDINGS[doc_idxs]
@@ -573,13 +575,32 @@ def generate_rabbit_hole_combined(start_article, additional_keywords, postings_m
 
     random.shuffle(final_results)
 
-    for result in final_results[:path_length]:
-        result["dimensions"] = ["x", "y"]
-        result["dimensionScores"] = [1.0, 1.0]
+    final_results.insert(0, {
+            "id" : -1,
+            "title" : "QUERY",
+            "score" : -1,
+            "branch" : 0,
+            "description" : description,
+            "dimensions" : dim_names,
+            "dimensionScores" : dim_scores,
+            "text" : ""
+        })
+
+    for result in final_results[1:path_length+1]:
+        doc_vec = TERM_EMBEDDINGS @ (SINGULAR_VALUES * DOC_EMBEDDINGS[result["id"], :])
+        dims = top_query_dimensions(doc_vec @ TERM_EMBEDDINGS, top_k=100)
+        dims.sort(key=lambda x: x[0])
+        dim_names = []
+        dim_scores = []
+        for dim, score in top_q_dims:
+            dim_names.append(dimension_themes[dim])
+            dim_scores.append(float(dims[dim][0]))
+        result["dimensions"] = dim_names
+        result["dimensionScores"] = dim_scores
         print(result)
 
 
-    return [final_results[:path_length]]
+    return [final_results[:path_length+1]]
 
 
 
