@@ -137,6 +137,7 @@ def register_rag_route(app, run_pipeline):
             "results": branches,
         })
 
+
 def register_chat_route(app, json_search):
     """Register the /api/chat SSE endpoint. Called from routes.py."""
 
