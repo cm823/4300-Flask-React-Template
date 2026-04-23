@@ -3,10 +3,11 @@ import json
 import os
 from flask import send_from_directory, request, jsonify
 from models import db, Postings
+from utils import generate_rabbit_hole_combined
 from utils import generate_rabbit_hole_svd
 from utils import generate_rabbit_hole, load_data, get_svd_graph_data
 
-USE_LLM = False
+USE_LLM = True
 
 load_data()
 
@@ -45,10 +46,17 @@ def register_routes(app):
                 postings_model=Postings,
                 path_length=path_length,
                 diversity_lambda=1,
-                num_branches=num_branches,
+                num_branches=1,
             )
         else:
-            branches = generate_rabbit_hole_svd(start_article, path_length=path_length, num_branches=num_branches)
+            branches = generate_rabbit_hole_svd(start_article, path_length=path_length, num_branches=1)
+            # branches = generate_rabbit_hole_combined(
+            #     start_article,
+            #     keywords,
+            #     postings_model=Postings,
+            #     path_length=path_length,
+            #     num_branches=1,
+            # )
         return jsonify(branches)
 
     @app.route('/api/svd/graph', methods=['GET'])
