@@ -16,6 +16,152 @@ interface ArticleNode {
   dimensionScores?: number[];
 }
 
+/* ─── Branch colours ────────────────────────────────────────────────────── */
+const BRANCH_COLORS = ["#93c5fd", "#a5b4fc", "#c4b5fd"];
+
+/* ─── Shorten long dimension theme labels for radar axes ─────────────────── */
+function shortLabel(label: string): string {
+  return label.length > 14 ? label.slice(0, 13) + "…" : label;
+}
+
+/* ─── Core SVG radar (reused by per-doc, query, and aggregate charts) ─────── */
+function DimensionRadar({
+  title,
+  dimensions,
+  scores,
+  color,
+}: {
+  title: string;
+  dimensions: string[];
+  scores: number[];
+  color: string;
+}) {
+  if (dimensions.length < 3) return null;
+  const rawScores = scores.map(Math.abs);
+  const maxScore = Math.max(...rawScores);
+  if (maxScore === 0) return null;
+  const normalized = rawScores.map((s) => s / maxScore);
+
+  const SIZE = 200;
+  const cx = SIZE / 2;
+  const cy = SIZE / 2;
+  const r = SIZE * 0.3;
+  const labelR = SIZE * 0.46;
+  const n = dimensions.length;
+
+  const angle = (i: number) => (i / n) * 2 * Math.PI - Math.PI / 2;
+  const ptx = (i: number, s: number) => cx + Math.cos(angle(i)) * r * s;
+  const pty = (i: number, s: number) => cy + Math.sin(angle(i)) * r * s;
+
+  const gridLevels = [0.25, 0.5, 0.75, 1.0];
+  const dataPoints = normalized.map((s, i) => `${ptx(i, s)},${pty(i, s)}`).join(" ");
+
+  return (
+    <div className="node-radar-wrap">
+      <p className="node-radar-title">{title}</p>
+      <svg
+        viewBox={`-40 -20 ${SIZE + 80} ${SIZE + 40}`}
+        className="node-radar-svg"
+        aria-hidden="true"
+      >
+        {gridLevels.map((level) => (
+          <polygon
+            key={level}
+            points={dimensions.map((_, i) => `${ptx(i, level)},${pty(i, level)}`).join(" ")}
+            fill="none"
+            stroke="rgba(255,255,255,0.07)"
+            strokeWidth={0.8}
+          />
+        ))}
+        {dimensions.map((_, i) => (
+          <line
+            key={i}
+            x1={cx} y1={cy}
+            x2={ptx(i, 1)} y2={pty(i, 1)}
+            stroke="rgba(255,255,255,0.1)"
+            strokeWidth={0.7}
+          />
+        ))}
+        <polygon
+          points={dataPoints}
+          fill={color}
+          fillOpacity={0.18}
+          stroke={color}
+          strokeWidth={1.5}
+          strokeOpacity={0.85}
+          strokeLinejoin="round"
+        />
+        {normalized.map((s, i) => (
+          <circle
+            key={i}
+            cx={ptx(i, s)}
+            cy={pty(i, s)}
+            r={3}
+            fill={color}
+            fillOpacity={0.9}
+          />
+        ))}
+        {dimensions.map((theme, i) => {
+          const lx = cx + Math.cos(angle(i)) * labelR;
+          const ly = cy + Math.sin(angle(i)) * labelR;
+          const ta = lx < cx - 8 ? "end" : lx > cx + 8 ? "start" : "middle";
+          return (
+            <text
+              key={i}
+              x={lx}
+              y={ly}
+              textAnchor={ta}
+              dominantBaseline="middle"
+              fontSize="7.5"
+              fontFamily="Lato, sans-serif"
+              fill="rgba(210,225,255,0.55)"
+              letterSpacing="0.03em"
+            >
+              {shortLabel(theme)}
+            </text>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+/* ─── Per-document radar (uses the node's own top dimensions) ─────────────── */
+function NodeRadar({ node, color }: { node: ArticleNode; color: string }) {
+  if (!node.dimensions || !node.dimensionScores) return null;
+  return (
+    <DimensionRadar
+      title={node.title}
+      dimensions={node.dimensions}
+      scores={node.dimensionScores}
+      color={color}
+    />
+  );
+}
+
+/* ─── Aggregate radar (union of all article dimensions, summed) ───────────── */
+function AggregateRadar({ nodes, color }: { nodes: ArticleNode[]; color: string }) {
+  const totals = new Map<string, number>();
+  for (const node of nodes) {
+    if (!node.dimensions || !node.dimensionScores) continue;
+    node.dimensions.forEach((dim, i) => {
+      totals.set(dim, (totals.get(dim) ?? 0) + (node.dimensionScores![i] ?? 0));
+    });
+  }
+  if (totals.size < 3) return null;
+  const top6 = [...totals.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6);
+  return (
+    <DimensionRadar
+      title="All Articles"
+      dimensions={top6.map(([name]) => name)}
+      scores={top6.map(([, score]) => score)}
+      color={color}
+    />
+  );
+}
+
 /* ─── Asset imports ──────────────────────────────────────────────────────── */
 import eggImg from "../../assets/egg.png";
 import cardImg from "../../assets/card.png";
@@ -352,11 +498,13 @@ function ArticlePanel({
 export function BranchScrollJourney({
   branch,
   onSurface,
-  onArticleChange, // <--- NEW PROP
+  onArticleChange,
+  scoringMode = "tfidf",
 }: {
   branch: ArticleNode[];
   onSurface: () => void;
-  onArticleChange: (idx: number) => void; // <--- ADD TYPE
+  onArticleChange: (idx: number) => void;
+  scoringMode?: string;
 }) {
   const animeReady = useAnimeJS();
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -382,17 +530,56 @@ export function BranchScrollJourney({
         className="journey-scroll"
         style={{ position: "relative", zIndex: 1 }}
       >
-        {branch.map((node, i) => (
-          <div key={node.id} className="journey-segment">
-            <ArticlePanel
-              node={node}
-              index={i}
-              animeReady={animeReady}
-              onVisible={onArticleChange} // <--- Pass the new prop here
-            />
-            {i < branch.length - 1 && <DirtDivider />}
-          </div>
-        ))}
+        {(() => {
+          const showRadar = scoringMode === "svd" || scoringMode === "combined";
+          const queryNode = showRadar ? branch.find((n) => n.id === -1) : undefined;
+          const articleNodes = branch.filter((n) => n.id !== -1);
+
+          return (
+            <>
+              {/* ── Query SVD profile ── */}
+              {showRadar && queryNode?.dimensions && queryNode.dimensionScores && (
+                <div className="svd-radar-section">
+                  <p className="svd-radar-section-label">Query SVD Profile</p>
+                  <div className="node-radar-panel node-radar-panel--row">
+                    <NodeRadar node={queryNode} color="#fbbf24" />
+                  </div>
+                </div>
+              )}
+
+              {/* ── Per-article segments ── */}
+              {articleNodes.map((node, i) => (
+                <div key={node.id} className="journey-segment">
+                  <ArticlePanel
+                    node={node}
+                    index={i}
+                    animeReady={animeReady}
+                    onVisible={onArticleChange}
+                  />
+                  {showRadar && node.dimensions && node.dimensionScores && (
+                    <div className="node-radar-panel node-radar-panel--row">
+                      <NodeRadar
+                        node={node}
+                        color={BRANCH_COLORS[i % BRANCH_COLORS.length]}
+                      />
+                    </div>
+                  )}
+                  {i < articleNodes.length - 1 && <DirtDivider />}
+                </div>
+              ))}
+
+              {/* ── Aggregate SVD profile ── */}
+              {showRadar && articleNodes.some((n) => n.dimensions) && (
+                <div className="svd-radar-section">
+                  <p className="svd-radar-section-label">Aggregate SVD Profile</p>
+                  <div className="node-radar-panel node-radar-panel--row">
+                    <AggregateRadar nodes={articleNodes} color="#34d399" />
+                  </div>
+                </div>
+              )}
+            </>
+          );
+        })()}
 
         <div
           className="journey-end-cap"

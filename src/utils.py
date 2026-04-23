@@ -428,41 +428,45 @@ def generate_rabbit_hole_svd(start_article, path_length=5, num_branches=3):
 
     description = "A unique thematic cluster."
 
+    # Query node dimensions (top-6 by magnitude)
+    top_q_dims = top_query_dimensions(q_emb, top_k=6)
+    q_dim_names = []
+    q_dim_scores = []
+    for dim, score in top_q_dims:
+        name = dimension_themes[int(dim)]
+        if name not in q_dim_names:
+            q_dim_names.append(name)
+            q_dim_scores.append(float(abs(score)))
+
     for i in range(0, path_length * num_branches, path_length):
         nodes = top_idx[i:i+path_length]
         temp = []
-        top_q_dims = top_query_dimensions(q_emb)
-        dim_ids = [i[0] for i in top_q_dims]
-        dim_names = []
-        dim_scores = []
-        for dim, score in top_q_dims:
-            if dimension_themes[dim] not in dim_names:
-                dim_names.append(dimension_themes[dim])
-                dim_scores.append(float(score))
         temp.append({
             "id" : -1,
             "title" : "QUERY",
             "score" : -1,
             "branch" : 0,
             "description" : description,
-            "dimensions" : dim_names,
-            "dimensionScores" : dim_scores,
+            "dimensions" : q_dim_names,
+            "dimensionScores" : q_dim_scores,
             "text" : ""
         })
         for node in nodes:
             doc_vec = TERM_EMBEDDINGS @ (SINGULAR_VALUES * DOC_EMBEDDINGS[node, :])
-            dims = top_query_dimensions(doc_vec @ TERM_EMBEDDINGS, k=100)
-            dims.sort(key=lambda x: x[0])
+            doc_q_emb = doc_vec @ TERM_EMBEDDINGS
+            top_doc_dims = top_query_dimensions(doc_q_emb, top_k=6)
             dim_names = []
             dim_scores = []
+            for dim, score in top_doc_dims:
+                name = dimension_themes[int(dim)]
+                if name not in dim_names:
+                    dim_names.append(name)
+                    dim_scores.append(float(abs(score)))
             title = DOC_IDS_SVD[node]
             try:
                 text = Articles.query.filter_by(article_name=title).first().article_text
             except Exception as e:
                 text = ""
-            for dim in dim_ids:
-                dim_names.append(dimension_themes[dim])
-                dim_scores.append(float(dims[dim[1]]))
             temp.append(
                 {
                     "id": int(node),
@@ -573,13 +577,48 @@ def generate_rabbit_hole_combined(start_article, additional_keywords, postings_m
 
     random.shuffle(final_results)
 
+    # Query node — top-6 SVD dimensions by magnitude
+    top_q_dims = top_query_dimensions(vec, top_k=6)
+    q_dim_names = []
+    q_dim_scores = []
+    for dim, score in top_q_dims:
+        name = dimension_themes[int(dim)]
+        if name not in q_dim_names:
+            q_dim_names.append(name)
+            q_dim_scores.append(float(abs(score)))
+
+    query_node = {
+        "id": -1,
+        "title": "QUERY",
+        "score": -1,
+        "branch": 0,
+        "description": "Query SVD dimensions",
+        "dimensions": q_dim_names,
+        "dimensionScores": q_dim_scores,
+        "text": ""
+    }
+
+    # Per-document: each doc gets its own top-6 SVD dimensions
     for result in final_results[:path_length]:
-        result["dimensions"] = ["x", "y"]
-        result["dimensionScores"] = [1.0, 1.0]
-        print(result)
+        svd_id = DOC_IDS_SVD_REVERSE.get(result["title"])
+        if svd_id is not None:
+            doc_vec = TERM_EMBEDDINGS @ (SINGULAR_VALUES * DOC_EMBEDDINGS[svd_id, :])
+            doc_q_emb = doc_vec @ TERM_EMBEDDINGS
+            top_doc_dims = top_query_dimensions(doc_q_emb, top_k=6)
+            dim_names = []
+            dim_scores = []
+            for dim, score in top_doc_dims:
+                name = dimension_themes[int(dim)]
+                if name not in dim_names:
+                    dim_names.append(name)
+                    dim_scores.append(float(abs(score)))
+            result["dimensions"] = dim_names
+            result["dimensionScores"] = dim_scores
+        else:
+            result["dimensions"] = q_dim_names
+            result["dimensionScores"] = q_dim_scores[:]
 
-
-    return [final_results[:path_length]]
+    return [[query_node] + final_results[:path_length]]
 
 
 
