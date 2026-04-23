@@ -20,7 +20,7 @@ interface ArticleNode {
 type ScoringMode = "tfidf" | "svd" | "combined";
 
 const ALGO_LABELS: Record<ScoringMode, string> = {
-  tfidf: "TF-IDF + MMR",
+  tfidf: "TF-IDF",
   svd: "SVD",
   combined: "Combined",
 };
@@ -436,7 +436,7 @@ export default function App(): JSX.Element {
                 marginBottom: "4px",
               }}
             >
-              {currentArticleIndex + 1} / {branches[0].length}
+              {currentArticleIndex + 1} / {numArticles}
             </strong>
             <span
               style={{

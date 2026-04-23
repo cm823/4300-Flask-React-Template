@@ -19,10 +19,11 @@ interface ArticleNode {
 /* ─── Branch colours ────────────────────────────────────────────────────── */
 const BRANCH_COLORS = ["#93c5fd", "#a5b4fc", "#c4b5fd"];
 
-/* ─── Shorten long dimension theme labels for radar axes ─────────────────── */
-function shortLabel(label: string): string {
-  return label.length > 14 ? label.slice(0, 13) + "…" : label;
-}
+const ALGO_SCORE_LABELS: Record<string, string> = {
+  tfidf: "TF-IDF Score",
+  svd: "SVD Score",
+  combined: "Combined Score",
+};
 
 /* ─── Core SVG radar (reused by per-doc, query, and aggregate charts) ─────── */
 function DimensionRadar({
@@ -42,11 +43,12 @@ function DimensionRadar({
   if (maxScore === 0) return null;
   const normalized = rawScores.map((s) => s / maxScore);
 
-  const SIZE = 200;
+  const SIZE = 400;
   const cx = SIZE / 2;
   const cy = SIZE / 2;
   const r = SIZE * 0.3;
-  const labelR = SIZE * 0.46;
+  // Labels sit further out so long strings don't overlap the spokes
+  const labelR = SIZE * 0.52;
   const n = dimensions.length;
 
   const angle = (i: number) => (i / n) * 2 * Math.PI - Math.PI / 2;
@@ -56,11 +58,19 @@ function DimensionRadar({
   const gridLevels = [0.25, 0.5, 0.75, 1.0];
   const dataPoints = normalized.map((s, i) => `${ptx(i, s)},${pty(i, s)}`).join(" ");
 
+  // Extra horizontal padding for left/right labels, vertical for top/bottom
+  const PAD_H = 130;
+  const PAD_V = 80;
+  const vbX = -PAD_H;
+  const vbY = -PAD_V;
+  const vbW = SIZE + PAD_H * 2;
+  const vbH = SIZE + PAD_V * 2;
+
   return (
     <div className="node-radar-wrap">
       <p className="node-radar-title">{title}</p>
       <svg
-        viewBox={`-40 -20 ${SIZE + 80} ${SIZE + 40}`}
+        viewBox={`${vbX} ${vbY} ${vbW} ${vbH}`}
         className="node-radar-svg"
         aria-hidden="true"
       >
@@ -70,7 +80,7 @@ function DimensionRadar({
             points={dimensions.map((_, i) => `${ptx(i, level)},${pty(i, level)}`).join(" ")}
             fill="none"
             stroke="rgba(255,255,255,0.07)"
-            strokeWidth={0.8}
+            strokeWidth={1.2}
           />
         ))}
         {dimensions.map((_, i) => (
@@ -78,8 +88,8 @@ function DimensionRadar({
             key={i}
             x1={cx} y1={cy}
             x2={ptx(i, 1)} y2={pty(i, 1)}
-            stroke="rgba(255,255,255,0.1)"
-            strokeWidth={0.7}
+            stroke="rgba(255,255,255,0.12)"
+            strokeWidth={1}
           />
         ))}
         <polygon
@@ -87,7 +97,7 @@ function DimensionRadar({
           fill={color}
           fillOpacity={0.18}
           stroke={color}
-          strokeWidth={1.5}
+          strokeWidth={2}
           strokeOpacity={0.85}
           strokeLinejoin="round"
         />
@@ -96,7 +106,7 @@ function DimensionRadar({
             key={i}
             cx={ptx(i, s)}
             cy={pty(i, s)}
-            r={3}
+            r={5}
             fill={color}
             fillOpacity={0.9}
           />
@@ -104,7 +114,7 @@ function DimensionRadar({
         {dimensions.map((theme, i) => {
           const lx = cx + Math.cos(angle(i)) * labelR;
           const ly = cy + Math.sin(angle(i)) * labelR;
-          const ta = lx < cx - 8 ? "end" : lx > cx + 8 ? "start" : "middle";
+          const ta = lx < cx - 10 ? "end" : lx > cx + 10 ? "start" : "middle";
           return (
             <text
               key={i}
@@ -112,12 +122,12 @@ function DimensionRadar({
               y={ly}
               textAnchor={ta}
               dominantBaseline="middle"
-              fontSize="7.5"
+              fontSize="13"
               fontFamily="Lato, sans-serif"
-              fill="rgba(210,225,255,0.55)"
-              letterSpacing="0.03em"
+              fill="rgba(210,225,255,0.75)"
+              letterSpacing="0.02em"
             >
-              {shortLabel(theme)}
+              {theme}
             </text>
           );
         })}
@@ -385,11 +395,13 @@ function ArticlePanel({
   index,
   animeReady,
   onVisible,
+  scoringMode = "tfidf",
 }: {
   node: ArticleNode;
   index: number;
   animeReady: boolean;
   onVisible: (idx: number) => void;
+  scoringMode?: string;
 }) {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -470,7 +482,9 @@ function ArticlePanel({
         className="article-panel-inner"
         style={{ flex: 1, zIndex: 1, position: "relative" }}
       >
-        <span className="article-score-badge">{node.score.toFixed(3)}</span>
+        <span className="article-score-badge">
+          {ALGO_SCORE_LABELS[scoringMode] ?? "Score"}: {node.score.toFixed(3)}
+        </span>
         <h2 ref={titleRef} className="ml15">
           {words.map((w, i) => (
             <span key={i} className="word">
@@ -555,6 +569,7 @@ export function BranchScrollJourney({
                     index={i}
                     animeReady={animeReady}
                     onVisible={onArticleChange}
+                    scoringMode={scoringMode}
                   />
                   {showRadar && node.dimensions && node.dimensionScores && (
                     <div className="node-radar-panel node-radar-panel--row">
