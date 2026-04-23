@@ -433,6 +433,7 @@ def generate_rabbit_hole_svd(start_article, path_length=5, num_branches=3):
             dims = top_query_dimensions(doc_vec @ TERM_EMBEDDINGS)
             dim_names = []
             dim_scores = []
+            title = DOC_IDS_SVD[node]
             text = Articles.query.filter_by(title=title).first()
             for dim, score in dims:
                 if dimension_themes[dim] not in dim_names:
@@ -441,7 +442,7 @@ def generate_rabbit_hole_svd(start_article, path_length=5, num_branches=3):
             temp.append(
                 {
                     "id": int(node),
-                    "title": DOC_IDS_SVD[node],
+                    "title": title,
                     "score": round(float(scores[node]), 4),
                     "branch": int(i/path_length)+1,
                     "description": description,
