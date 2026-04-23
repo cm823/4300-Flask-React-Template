@@ -3,13 +3,13 @@ import re
 import json
 import os
 import numpy as np
-from sklearn.externals.array_api_compat.dask.array import vecdot
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 from nltk.stem import PorterStemmer
 from collections import defaultdict
 from models import Articles
 import logging
 import random
+vecdot = np.vdot
 
 stemmer = PorterStemmer()
 stemmed_stopwords = set(list({stemmer.stem(w) for w in ENGLISH_STOP_WORDS}) \
@@ -336,7 +336,7 @@ def generate_rabbit_hole(start_article, additional_keywords, postings_model, pat
     # Changed to branch nodes as frontend expects many branch nodes for each rabbit hole. 
     branch_nodes = []
 
-    description = "A unique thematic cluster."
+    description = "Your person to explore!"
 
     if randomize:
         np.random.shuffle(pathway)

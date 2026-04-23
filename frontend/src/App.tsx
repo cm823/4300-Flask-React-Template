@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import "./App.css";
 import Chat from "./Chat";
-import * as THREE from "three";
 import mountain from "./assets/mountain2.png";
+import rabbitImg from "../../assets/rabbithole.png";
+// IMPORT from our new Scroll Journey component
+import { BranchScrollJourney, TunnelCanvas } from "./ArticleScrollJourney";
 
-/* Types */
+/* ─── Types ──────────────────────────────────────────────────────────────── */
 interface ArticleNode {
   id: number;
   title: string;
@@ -23,7 +25,7 @@ const ALGO_LABELS: Record<ScoringMode, string> = {
   combined: "Combined",
 };
 
-/* Sparkle Cursor */
+/* ─── Sparkle Cursor ─────────────────────────────────────────────────────── */
 interface Sparkle {
   id: number;
   x: number;
@@ -95,6 +97,7 @@ function SparkleCursor() {
           boxShadow: "0 0 12px rgba(147, 197, 253, 0.8)",
           transform: "translate(-50%, -50%)",
           pointerEvents: "none",
+          zIndex: 9999, // Ensure cursor is always on top
         }}
       />
       {sparkles.map((s, i) => {
@@ -114,6 +117,8 @@ function SparkleCursor() {
               height: s.size * 1.4,
               transform: `translate(-50%,-50%) rotate(${s.rotation}deg) scale(${scale})`,
               opacity: alpha,
+              position: "fixed",
+              zIndex: 9999,
             }}
             viewBox="0 0 24 24"
           >
@@ -129,7 +134,7 @@ function SparkleCursor() {
   );
 }
 
-/* Twinkling star field layered ontop of the mountain bg */
+/* ─── Star Field ─────────────────────────────────────────────────────────── */
 function StarField() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -162,7 +167,6 @@ function StarField() {
         const px = s.x * canvas.width;
         const py = s.y * canvas.height;
         if (s.cross) {
-          // draw a 4-pointed cross star
           ctx.save();
           ctx.translate(px, py);
           ctx.rotate(Math.PI / 4);
@@ -189,129 +193,7 @@ function StarField() {
   return <canvas ref={canvasRef} className="star-canvas" />;
 }
 
-/* Three.js tunnel animation visual  */
-function TunnelCanvas({ index, active }: { index: number; active: boolean }) {
-  const mountRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const mount = mountRef.current;
-    if (!mount) return;
-    const W = mount.clientWidth || 280;
-    const H = mount.clientHeight || 460;
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(W, H);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    mount.appendChild(renderer.domElement);
-
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, W / H, 0.1, 100);
-    camera.position.z = 2;
-
-    const palettes = [
-      { m: new THREE.Color(0x93c5fd), d: new THREE.Color(0x1e3a5f) }, // blue
-      { m: new THREE.Color(0xa5b4fc), d: new THREE.Color(0x2d1b69) }, // indigo
-      { m: new THREE.Color(0xc4b5fd), d: new THREE.Color(0x3b1a6b) }, // violet
-    ];
-    const pal = palettes[index % palettes.length];
-    const col = active ? pal.m : pal.d;
-
-    const rings: THREE.Mesh[] = [];
-    for (let i = 0; i < 18; i++) {
-      const geo = new THREE.TorusGeometry(1.15, 0.018, 8, 56);
-      const mat = new THREE.MeshBasicMaterial({
-        color: col,
-        transparent: true,
-        opacity: active ? 0.6 - i * 0.022 : 0.18 - i * 0.006,
-      });
-      const ring = new THREE.Mesh(geo, mat);
-      ring.position.z = -i * 0.6;
-      scene.add(ring);
-      rings.push(ring);
-    }
-
-    const pCount = 90;
-    const pPos = new Float32Array(pCount * 3);
-    for (let i = 0; i < pCount; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const r = 0.4 + Math.random() * 0.75;
-      pPos[i * 3] = Math.cos(a) * r;
-      pPos[i * 3 + 1] = Math.sin(a) * r;
-      pPos[i * 3 + 2] = -Math.random() * 11;
-    }
-    const pgeo = new THREE.BufferGeometry();
-    pgeo.setAttribute("position", new THREE.BufferAttribute(pPos, 3));
-    scene.add(
-      new THREE.Points(
-        pgeo,
-        new THREE.PointsMaterial({
-          color: active ? pal.m : pal.d,
-          size: 0.032,
-          transparent: true,
-          opacity: active ? 0.85 : 0.25,
-        }),
-      ),
-    );
-
-    let frame = 8;
-    let animId: number;
-    const animate = () => {
-      animId = requestAnimationFrame(animate);
-      frame += 0.01;
-      rings.forEach((r, i) => {
-        r.position.z = ((-i * 0.6 + frame * 1.1) % 11) - 11;
-        r.rotation.z += 0.002 * (i % 2 === 0 ? 1 : -1);
-      });
-      const pos = pgeo.attributes.position as THREE.BufferAttribute;
-      for (let i = 0; i < pCount; i++) {
-        (pos.array as Float32Array)[i * 3 + 2] += 0.05;
-        if ((pos.array as Float32Array)[i * 3 + 2] > 2)
-          (pos.array as Float32Array)[i * 3 + 2] = -11;
-      }
-      pos.needsUpdate = true;
-      renderer.render(scene, camera);
-    };
-    animate();
-
-    const onResize = () => {
-      const w = mount.clientWidth;
-      const h = mount.clientHeight;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
-    };
-    window.addEventListener("resize", onResize);
-    return () => {
-      cancelAnimationFrame(animId);
-      window.removeEventListener("resize", onResize);
-      renderer.dispose();
-      if (mount.contains(renderer.domElement))
-        mount.removeChild(renderer.domElement);
-    };
-  }, [index, active]);
-  return <div ref={mountRef} className="tunnel-canvas" />;
-}
-
-/* Article Card */
-function ArticleCard({ node, depth }: { node: ArticleNode; depth: number }) {
-  const [hov, setHov] = useState(false);
-  return (
-    <a
-      href={`https://en.wikipedia.org/wiki/${encodeURIComponent(node.title)}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`article-card ${hov ? "hovered" : ""}`}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{ animationDelay: `${depth * 0.1 + 0.15}s` }}
-    >
-      <span className="card-pip" />
-      <span className="card-title">{node.title}</span>
-      <span className="card-score">{node.score.toFixed(3)}</span>
-      <span className="card-arrow">↗</span>
-    </a>
-  );
-}
-
-/* Algorithm Toggle */
+/* ─── Algorithm Toggle ───────────────────────────────────────────────────── */
 function AlgoToggle({
   value,
   onChange,
@@ -335,7 +217,7 @@ function AlgoToggle({
   );
 }
 
-/* Root App */
+/* ─── Root App ───────────────────────────────────────────────────────────── */
 export default function App(): JSX.Element {
   const [useLlm, setUseLlm] = useState<boolean | null>(null);
   const [article, setArticle] = useState("");
@@ -345,9 +227,14 @@ export default function App(): JSX.Element {
   const [scoringMode, setScoringMode] = useState<ScoringMode>("tfidf");
   const [numArticles, setNumArticles] = useState(5);
   const [underground, setUnderground] = useState(false);
-  const [activeBranch, setActiveBranch] = useState<number | null>(null);
+
+  // Custom scrolling state
+  const [currentArticleIndex, setCurrentArticleIndex] = useState(0);
+
+  // New RAG state from main branch
   const [modifiedQuery, setModifiedQuery] = useState<string | null>(null);
   const [ragSummary, setRagSummary] = useState<string | null>(null);
+
   useEffect(() => {
     fetch("/api/config")
       .then((r) => r.json())
@@ -358,12 +245,16 @@ export default function App(): JSX.Element {
     async (e?: React.FormEvent) => {
       if (e) e.preventDefault();
       if (!article.trim()) return;
+
       setLoading(true);
       setHasSearched(false);
       setUnderground(true);
+      setCurrentArticleIndex(0); // Reset scroll index
       setModifiedQuery(null);
       setRagSummary(null);
+
       try {
+        // Using the new API endpoint and JSON body from main branch
         const res = await fetch("/api/rag_query", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -373,6 +264,7 @@ export default function App(): JSX.Element {
             path_length: numArticles,
           }),
         });
+
         const data = await res.json();
         if (!res.ok) {
           console.error("rag_query error:", data);
@@ -395,6 +287,7 @@ export default function App(): JSX.Element {
     setUnderground(false);
     setBranches([]);
     setHasSearched(false);
+    setCurrentArticleIndex(0);
     setModifiedQuery(null);
     setRagSummary(null);
   };
@@ -405,24 +298,24 @@ export default function App(): JSX.Element {
     <>
       <SparkleCursor />
 
-      {/* The sky world, our user query page */}
+      {/* ── Sky world (search UI) ── */}
       <div className={`sky-world ${underground ? "sky-exit" : ""}`}>
-        {/* Mountain background image fills the whole sky */}
         <div
           className="mountain-bg"
           style={{ backgroundImage: `url(${mountain})` }}
         />
-
-        {/* Stars rendered on top of our mountain bg to amaze amaze amaze the users :)  */}
         <StarField />
 
-        {/* Hero */}
         <div className="hero-content">
-          <p className="hero-eyebrow">Wikipedia Discovery Engine</p>
+          <p className="hero-eyebrow">
+            Wikipedia Discovery Engine for Famous People!
+          </p>
           <h1 className="hero-title">
             <span className="title-rabbit">🐇</span> Rabbit Hole
           </h1>
-          <p className="hero-sub">Enter a topic. Fall down the rabbit hole.</p>
+          <p className="hero-sub">
+            Search something about someone. Fall down the rabbit hole.
+          </p>
 
           <form className="search-form" onSubmit={handleSearch}>
             <input
@@ -466,13 +359,107 @@ export default function App(): JSX.Element {
         </div>
       </div>
 
-      {/* Query results, aka underground world */}
+      {/* ── FIXED SIDEBAR RENDERED AT THE ROOT LEVEL ── */}
+      {underground && branches.length > 0 && branches[0]?.length > 0 && (
+        <div
+          className="journey-tunnel-wrap"
+          style={{
+            position: "fixed",
+            top: 0,
+            right: 0,
+            width: "300px",
+            height: "100vh",
+            zIndex: 100, // Safe high Z-index to sit above the dirt background
+            pointerEvents: "none",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "flex-end",
+            alignItems: "center",
+            paddingBottom: "40px",
+            boxSizing: "border-box",
+          }}
+        >
+          <TunnelCanvas />
+          <div className="tunnel-bottom-fade" />
+
+          <div
+            style={{
+              position: "absolute",
+              top: "50%", // Adjust this percentage to move it higher or lower in the tunnel
+              left: "55%",
+              transform: "translate(-50%, -50%)", // Perfectly centers the wrapper
+              zIndex: 200, // Keeps it above the tunnel, but safely behind the text
+            }}
+          >
+            <style>
+              {`
+                @keyframes rabbitBob {
+                  0%, 100% { transform: translateY(0); }
+                  50% { transform: translateY(-15px); }
+                }
+              `}
+            </style>
+            <img
+              src={rabbitImg}
+              alt="Flying Rabbit"
+              style={{
+                width: "120px",
+                height: "120px",
+                objectFit: "contain",
+                flexShrink: 0,
+                animation: `rabbitBob 4s ease-in-out infinite`,
+                // Use drop-shadow instead of box-shadow so it hugs the transparent PNG shape
+                filter: "drop-shadow(0 12px 16px rgba(0,0,0,0.6))",
+              }}
+            />
+          </div>
+
+          <div
+            className="tunnel-overlay-text"
+            style={{
+              textAlign: "center",
+              zIndex: 10,
+              width: "100%",
+              paddingBottom: "20px",
+              paddingLeft: "20px",
+              paddingRight: "20px",
+              boxSizing: "border-box",
+            }}
+          >
+            <strong
+              style={{
+                display: "block",
+                fontSize: "1.8rem",
+                fontWeight: 900,
+                textShadow: "0 0 8px rgba(0,0,0,0.8)",
+                color: "white",
+                marginBottom: "4px",
+              }}
+            >
+              {currentArticleIndex + 1} / {branches[0].length}
+            </strong>
+            <span
+              style={{
+                display: "block",
+                fontSize: "0.85rem",
+                textTransform: "uppercase",
+                letterSpacing: "1px",
+                color: "#93c5fd",
+                textShadow: "0 0 4px rgba(0,0,0,0.8)",
+              }}
+            >
+              article{branches[0].length !== 1 ? "s" : ""} discovered
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* ── Underground world (results) ── */}
       <div
         className={`underground-world ${underground ? "underground-enter" : ""}`}
       >
         <div className="dirt-bg" />
 
-        {/* Root SVGs */}
         <svg
           className="root-svg"
           viewBox="0 0 1400 900"
@@ -490,7 +477,6 @@ export default function App(): JSX.Element {
           </g>
         </svg>
 
-        {/* Pebbles */}
         {Array.from({ length: 25 }).map((_, i) => (
           <div
             key={i}
@@ -530,50 +516,32 @@ export default function App(): JSX.Element {
           </div>
         )}
 
+        {/* ── NEW RAG Context Summary ── */}
         {(modifiedQuery || ragSummary) && (
-          <div className="rag-context">
+          <div
+            className="rag-context"
+            style={{ zIndex: 1, position: "relative" }}
+          >
             {modifiedQuery && (
               <p className="rag-modified-query">
-                <span className="rag-label">Reformatted Query:</span> {modifiedQuery}
+                <span className="rag-label">Reformatted Query:</span>{" "}
+                {modifiedQuery}
               </p>
             )}
             {ragSummary && <p className="rag-summary">{ragSummary}</p>}
           </div>
         )}
 
-        {branches.length > 0 && (
-          <section className="branch-section">
-            <p className="branch-hint">
-              {branches.length} thematic tunnels · hover to illuminate · click
-              to explore
-            </p>
-            <div
-              className="branch-grid"
-              style={{ gridTemplateColumns: `repeat(${branches.length},1fr)` }}
-            >
-              {branches.map((branch, bi) => (
-                <div
-                  key={bi}
-                  className={`branch-col ${activeBranch === bi ? "active" : ""}`}
-                  onMouseEnter={() => setActiveBranch(bi)}
-                  onMouseLeave={() => setActiveBranch(null)}
-                >
-                  <TunnelCanvas index={bi} active={activeBranch === bi} />
-                  <div className="branch-label">Tunnel {bi + 1}</div>
-                  {branch[0]?.description && (
-                    <p className="branch-desc">{branch[0].description}</p>
-                  )}
-                  <div className="cards-stack">
-                    {branch.map((node, di) => (
-                      <ArticleCard key={node.id} node={node} depth={di} />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
+        {/* ── Our custom vertical scrolling journey ── */}
+        {branches.length > 0 && branches[0]?.length > 0 && (
+          <BranchScrollJourney
+            branch={branches[0]}
+            onSurface={handleSurface}
+            onArticleChange={setCurrentArticleIndex}
+          />
         )}
 
+        {/* ── Chatbot from main ── */}
         {useLlm && (
           <Chat
             onSearchTerm={(val) => {
