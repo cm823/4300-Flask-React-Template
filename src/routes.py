@@ -5,7 +5,7 @@ from flask import send_from_directory, request, jsonify
 from models import db, Postings
 from utils import generate_rabbit_hole_combined
 from utils import generate_rabbit_hole_svd
-from utils import generate_rabbit_hole, load_data, get_svd_graph_data
+from utils import generate_rabbit_hole, load_data
 
 USE_LLM = True
 
@@ -59,11 +59,6 @@ def register_routes(app):
                 num_branches=1,
             )
         return jsonify(branches)
-
-    @app.route('/api/svd/graph', methods=['GET'])
-    def svd_graph():
-        terms_per_theme = int(request.args.get('terms_per_theme', 8))
-        return jsonify(get_svd_graph_data(terms_per_theme))
 
     if USE_LLM:
         from llm_routes import register_chat_route
