@@ -538,6 +538,7 @@ export default function App(): JSX.Element {
             branch={branches[0]}
             onSurface={handleSurface}
             onArticleChange={setCurrentArticleIndex}
+            scoringMode={scoringMode}
           />
         )}
 
