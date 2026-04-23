@@ -16,11 +16,12 @@ interface ArticleNode {
   dimensionScores?: number[];
 }
 
-type ScoringMode = "tfidf" | "svd";
+type ScoringMode = "tfidf" | "svd" | "combined";
 
 const ALGO_LABELS: Record<ScoringMode, string> = {
   tfidf: "TF-IDF + MMR",
   svd: "SVD",
+  combined: "Combined",
 };
 
 /* Sparkle Cursor */
@@ -355,190 +356,190 @@ function SvdClusterGraph() {
 
     const build = (W: number, H: number) => {
 
-    const svg = d3.select(el);
-    svg.selectAll("*").remove();
+      const svg = d3.select(el);
+      svg.selectAll("*").remove();
 
-    const themeColor = (idx: number) => THEME_PALETTE[idx % THEME_PALETTE.length];
+      const themeColor = (idx: number) => THEME_PALETTE[idx % THEME_PALETTE.length];
 
-    // Deep-copy so D3 can mutate x/y/vx/vy
-    const nodes: GNode[] = gdata.nodes.map((n) => ({ ...n }));
-    const byId = new Map(nodes.map((n) => [n.id, n]));
+      // Deep-copy so D3 can mutate x/y/vx/vy
+      const nodes: GNode[] = gdata.nodes.map((n) => ({ ...n }));
+      const byId = new Map(nodes.map((n) => [n.id, n]));
 
-    const edges: GEdge[] = gdata.edges.map((e) => ({
-      source: byId.get(e.source as string) ?? e.source,
-      target: byId.get(e.target as string) ?? e.target,
-    }));
+      const edges: GEdge[] = gdata.edges.map((e) => ({
+        source: byId.get(e.source as string) ?? e.source,
+        target: byId.get(e.target as string) ?? e.target,
+      }));
 
-    // Pre-position nodes near cluster centres arranged in a circle
-    const numClusters = gdata.themes.length;
-    const centres = gdata.themes.map((_, i) => {
-      const angle = (i / numClusters) * 2 * Math.PI - Math.PI / 2;
-      const r = Math.min(W, H) * 0.3;
-      return { x: W / 2 + r * Math.cos(angle), y: H / 2 + r * Math.sin(angle) };
-    });
-    nodes.forEach((n) => {
-      const c = centres[n.cluster];
-      n.x = c.x + (Math.random() - 0.5) * 70;
-      n.y = c.y + (Math.random() - 0.5) * 70;
-    });
-
-    const root = svg.append("g");
-
-    // Edges (drawn first so nodes sit on top)
-    const linkSel = root
-      .append("g")
-      .selectAll<SVGLineElement, GEdge>("line")
-      .data(edges)
-      .join("line")
-      .attr("stroke", (d) => themeColor((d.source as GNode).cluster))
-      .attr("stroke-opacity", 0.18)
-      .attr("stroke-width", 1.2);
-
-    // Node groups
-    const nodeG = root
-      .append("g")
-      .selectAll<SVGGElement, GNode>("g")
-      .data(nodes)
-      .join("g");
-
-    const nodeR = (d: GNode) => 5 + Math.sqrt(d.weight) * 9;
-
-    nodeG
-      .append("circle")
-      .attr("r", nodeR)
-      .attr("fill", (d) => themeColor(d.cluster))
-      .attr("fill-opacity", 0.78)
-      .attr("stroke", (d) => themeColor(d.cluster))
-      .attr("stroke-width", 1.5)
-      .attr("stroke-opacity", 0.45);
-
-    nodeG
-      .append("text")
-      .text((d) => d.label)
-      .attr("text-anchor", "middle")
-      .attr("dy", "0.35em")
-      .attr("font-size", "8.5px")
-      .attr("font-family", "Lato, sans-serif")
-      .attr("fill", "#fff")
-      .attr("fill-opacity", 0.88)
-      .attr("pointer-events", "none");
-
-    // Cluster theme labels — repositioned each tick
-    const clusterLabelSel = root
-      .append("g")
-      .selectAll<SVGTextElement, { theme: string; idx: number }>("text")
-      .data(gdata.themes.map((theme, idx) => ({ theme, idx })))
-      .join("text")
-      .attr("font-size", "10px")
-      .attr("font-weight", "700")
-      .attr("font-family", "Lato, sans-serif")
-      .attr("letter-spacing", "0.07em")
-      .attr("fill", (d) => themeColor(d.idx))
-      .attr("fill-opacity", 0.7)
-      .attr("pointer-events", "none")
-      .text((d) => d.theme.toUpperCase());
-
-    // Hover
-    nodeG
-      .on("mouseenter", (event: MouseEvent, d: GNode) => {
-        setTip({ label: d.label, theme: d.theme, color: themeColor(d.cluster), x: event.clientX, y: event.clientY });
-        d3.select(event.currentTarget as Element)
-          .select("circle")
-          .attr("fill-opacity", 1)
-          .attr("r", nodeR(d) + 3);
-      })
-      .on("mousemove", (event: MouseEvent) =>
-        setTip((t) => (t ? { ...t, x: event.clientX, y: event.clientY } : null)),
-      )
-      .on("mouseleave", (event: MouseEvent, d: GNode) => {
-        setTip(null);
-        d3.select(event.currentTarget as Element)
-          .select("circle")
-          .attr("fill-opacity", 0.78)
-          .attr("r", nodeR(d));
+      // Pre-position nodes near cluster centres arranged in a circle
+      const numClusters = gdata.themes.length;
+      const centres = gdata.themes.map((_, i) => {
+        const angle = (i / numClusters) * 2 * Math.PI - Math.PI / 2;
+        const r = Math.min(W, H) * 0.3;
+        return { x: W / 2 + r * Math.cos(angle), y: H / 2 + r * Math.sin(angle) };
+      });
+      nodes.forEach((n) => {
+        const c = centres[n.cluster];
+        n.x = c.x + (Math.random() - 0.5) * 70;
+        n.y = c.y + (Math.random() - 0.5) * 70;
       });
 
-    // D3 force simulation (SNAP-style: repulsion + cluster attraction + link cohesion)
-    const sim = d3
-      .forceSimulation<GNode>(nodes)
-      .force(
-        "link",
-        d3.forceLink<GNode, GEdge>(edges).id((d) => d.id).distance(50).strength(0.35),
-      )
-      .force("charge", d3.forceManyBody<GNode>().strength(-130))
-      .force("collide", d3.forceCollide<GNode>((d) => nodeR(d) + 5))
-      .force("cluster", () => {
-        // Pull each node toward its theme-cluster centre
-        nodes.forEach((n) => {
-          const c = centres[n.cluster];
-          n.vx = (n.vx ?? 0) + (c.x - (n.x ?? 0)) * 0.04;
-          n.vy = (n.vy ?? 0) + (c.y - (n.y ?? 0)) * 0.04;
+      const root = svg.append("g");
+
+      // Edges (drawn first so nodes sit on top)
+      const linkSel = root
+        .append("g")
+        .selectAll<SVGLineElement, GEdge>("line")
+        .data(edges)
+        .join("line")
+        .attr("stroke", (d) => themeColor((d.source as GNode).cluster))
+        .attr("stroke-opacity", 0.18)
+        .attr("stroke-width", 1.2);
+
+      // Node groups
+      const nodeG = root
+        .append("g")
+        .selectAll<SVGGElement, GNode>("g")
+        .data(nodes)
+        .join("g");
+
+      const nodeR = (d: GNode) => 5 + Math.sqrt(d.weight) * 9;
+
+      nodeG
+        .append("circle")
+        .attr("r", nodeR)
+        .attr("fill", (d) => themeColor(d.cluster))
+        .attr("fill-opacity", 0.78)
+        .attr("stroke", (d) => themeColor(d.cluster))
+        .attr("stroke-width", 1.5)
+        .attr("stroke-opacity", 0.45);
+
+      nodeG
+        .append("text")
+        .text((d) => d.label)
+        .attr("text-anchor", "middle")
+        .attr("dy", "0.35em")
+        .attr("font-size", "8.5px")
+        .attr("font-family", "Lato, sans-serif")
+        .attr("fill", "#fff")
+        .attr("fill-opacity", 0.88)
+        .attr("pointer-events", "none");
+
+      // Cluster theme labels — repositioned each tick
+      const clusterLabelSel = root
+        .append("g")
+        .selectAll<SVGTextElement, { theme: string; idx: number }>("text")
+        .data(gdata.themes.map((theme, idx) => ({ theme, idx })))
+        .join("text")
+        .attr("font-size", "10px")
+        .attr("font-weight", "700")
+        .attr("font-family", "Lato, sans-serif")
+        .attr("letter-spacing", "0.07em")
+        .attr("fill", (d) => themeColor(d.idx))
+        .attr("fill-opacity", 0.7)
+        .attr("pointer-events", "none")
+        .text((d) => d.theme.toUpperCase());
+
+      // Hover
+      nodeG
+        .on("mouseenter", (event: MouseEvent, d: GNode) => {
+          setTip({ label: d.label, theme: d.theme, color: themeColor(d.cluster), x: event.clientX, y: event.clientY });
+          d3.select(event.currentTarget as Element)
+            .select("circle")
+            .attr("fill-opacity", 1)
+            .attr("r", nodeR(d) + 3);
+        })
+        .on("mousemove", (event: MouseEvent) =>
+          setTip((t) => (t ? { ...t, x: event.clientX, y: event.clientY } : null)),
+        )
+        .on("mouseleave", (event: MouseEvent, d: GNode) => {
+          setTip(null);
+          d3.select(event.currentTarget as Element)
+            .select("circle")
+            .attr("fill-opacity", 0.78)
+            .attr("r", nodeR(d));
         });
-      })
-      .force("bounds", () => {
-        // Keep nodes inside the canvas
-        const pad = 55;
-        nodes.forEach((n) => {
-          const r = nodeR(n);
-          if ((n.x ?? 0) - r < pad)       n.vx = (n.vx ?? 0) + 1.5;
-          if ((n.x ?? 0) + r > W - pad)   n.vx = (n.vx ?? 0) - 1.5;
-          if ((n.y ?? 0) - r < pad)       n.vy = (n.vy ?? 0) + 1.5;
-          if ((n.y ?? 0) + r > H - pad)   n.vy = (n.vy ?? 0) - 1.5;
+
+      // D3 force simulation (SNAP-style: repulsion + cluster attraction + link cohesion)
+      const sim = d3
+        .forceSimulation<GNode>(nodes)
+        .force(
+          "link",
+          d3.forceLink<GNode, GEdge>(edges).id((d) => d.id).distance(50).strength(0.35),
+        )
+        .force("charge", d3.forceManyBody<GNode>().strength(-130))
+        .force("collide", d3.forceCollide<GNode>((d) => nodeR(d) + 5))
+        .force("cluster", () => {
+          // Pull each node toward its theme-cluster centre
+          nodes.forEach((n) => {
+            const c = centres[n.cluster];
+            n.vx = (n.vx ?? 0) + (c.x - (n.x ?? 0)) * 0.04;
+            n.vy = (n.vy ?? 0) + (c.y - (n.y ?? 0)) * 0.04;
+          });
+        })
+        .force("bounds", () => {
+          // Keep nodes inside the canvas
+          const pad = 55;
+          nodes.forEach((n) => {
+            const r = nodeR(n);
+            if ((n.x ?? 0) - r < pad) n.vx = (n.vx ?? 0) + 1.5;
+            if ((n.x ?? 0) + r > W - pad) n.vx = (n.vx ?? 0) - 1.5;
+            if ((n.y ?? 0) - r < pad) n.vy = (n.vy ?? 0) + 1.5;
+            if ((n.y ?? 0) + r > H - pad) n.vy = (n.vy ?? 0) - 1.5;
+          });
+        })
+        .on("tick", () => {
+          linkSel
+            .attr("x1", (d) => (d.source as GNode).x ?? 0)
+            .attr("y1", (d) => (d.source as GNode).y ?? 0)
+            .attr("x2", (d) => (d.target as GNode).x ?? 0)
+            .attr("y2", (d) => (d.target as GNode).y ?? 0);
+
+          nodeG.attr("transform", (d) => `translate(${d.x ?? 0},${d.y ?? 0})`);
+
+          // Recompute label positions — placed outward from graph centre
+          clusterLabelSel.each(function (d) {
+            const members = nodes.filter((n) => n.cluster === d.idx);
+            const cx = d3.mean(members, (m) => m.x) ?? centres[d.idx].x;
+            const cy = d3.mean(members, (m) => m.y) ?? centres[d.idx].y;
+
+            // Angle from graph centre to cluster centroid
+            const dx = cx - W / 2;
+            const dy = cy - H / 2;
+            const angle = Math.atan2(dy, dx); // -PI..PI
+            const PAD = 28;
+
+            let lx: number, ly: number, anchor: string;
+            const absDeg = Math.abs(angle) * (180 / Math.PI);
+
+            if (absDeg < 45) {
+              // cluster on the right → label to the right
+              lx = (d3.max(members, (m) => (m.x ?? 0) + nodeR(m)) ?? cx) + PAD;
+              ly = cy;
+              anchor = "start";
+            } else if (absDeg > 135) {
+              // cluster on the left → label to the left
+              lx = (d3.min(members, (m) => (m.x ?? 0) - nodeR(m)) ?? cx) - PAD;
+              ly = cy;
+              anchor = "end";
+            } else if (dy < 0) {
+              // cluster toward top → label above
+              lx = cx;
+              ly = (d3.min(members, (m) => (m.y ?? 0) - nodeR(m)) ?? cy) - PAD;
+              anchor = "middle";
+            } else {
+              // cluster toward bottom → label below
+              lx = cx;
+              ly = (d3.max(members, (m) => (m.y ?? 0) + nodeR(m)) ?? cy) + PAD + 12;
+              anchor = "middle";
+            }
+
+            // Clamp so labels never spill outside the SVG
+            lx = Math.max(90, Math.min(W - 90, lx));
+            ly = Math.max(14, Math.min(H - 14, ly));
+
+            d3.select(this).attr("x", lx).attr("y", ly).attr("text-anchor", anchor);
+          });
         });
-      })
-      .on("tick", () => {
-        linkSel
-          .attr("x1", (d) => (d.source as GNode).x ?? 0)
-          .attr("y1", (d) => (d.source as GNode).y ?? 0)
-          .attr("x2", (d) => (d.target as GNode).x ?? 0)
-          .attr("y2", (d) => (d.target as GNode).y ?? 0);
-
-        nodeG.attr("transform", (d) => `translate(${d.x ?? 0},${d.y ?? 0})`);
-
-        // Recompute label positions — placed outward from graph centre
-        clusterLabelSel.each(function (d) {
-          const members = nodes.filter((n) => n.cluster === d.idx);
-          const cx = d3.mean(members, (m) => m.x) ?? centres[d.idx].x;
-          const cy = d3.mean(members, (m) => m.y) ?? centres[d.idx].y;
-
-          // Angle from graph centre to cluster centroid
-          const dx = cx - W / 2;
-          const dy = cy - H / 2;
-          const angle = Math.atan2(dy, dx); // -PI..PI
-          const PAD = 28;
-
-          let lx: number, ly: number, anchor: string;
-          const absDeg = Math.abs(angle) * (180 / Math.PI);
-
-          if (absDeg < 45) {
-            // cluster on the right → label to the right
-            lx = (d3.max(members, (m) => (m.x ?? 0) + nodeR(m)) ?? cx) + PAD;
-            ly = cy;
-            anchor = "start";
-          } else if (absDeg > 135) {
-            // cluster on the left → label to the left
-            lx = (d3.min(members, (m) => (m.x ?? 0) - nodeR(m)) ?? cx) - PAD;
-            ly = cy;
-            anchor = "end";
-          } else if (dy < 0) {
-            // cluster toward top → label above
-            lx = cx;
-            ly = (d3.min(members, (m) => (m.y ?? 0) - nodeR(m)) ?? cy) - PAD;
-            anchor = "middle";
-          } else {
-            // cluster toward bottom → label below
-            lx = cx;
-            ly = (d3.max(members, (m) => (m.y ?? 0) + nodeR(m)) ?? cy) + PAD + 12;
-            anchor = "middle";
-          }
-
-          // Clamp so labels never spill outside the SVG
-          lx = Math.max(90, Math.min(W - 90, lx));
-          ly = Math.max(14, Math.min(H - 14, ly));
-
-          d3.select(this).attr("x", lx).attr("y", ly).attr("text-anchor", anchor);
-        });
-      });
 
       return () => { sim.stop(); };
     };  // end build()
@@ -728,7 +729,7 @@ function AlgoToggle({
 }) {
   return (
     <div className="algo-toggle">
-      {(["tfidf", "svd"] as ScoringMode[]).map((m) => (
+      {(["tfidf", "svd", "combined"] as ScoringMode[]).map((m) => (
         <button
           key={m}
           type="button"
