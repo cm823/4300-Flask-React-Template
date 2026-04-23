@@ -43,6 +43,7 @@ def llm_search_decision(client, user_message):
     return False, None
 
 
+<<<<<<< HEAD
 def rewrite_query(client, original_query):
     """Ask the LLM to expand the query with synonyms for better retrieval."""
     messages = [
@@ -138,6 +139,8 @@ def register_rag_route(app, run_pipeline):
         })
 
 
+=======
+>>>>>>> 52193f6f4ed69f36c8e0a6019e8e98eefeb00d5e
 def register_chat_route(app, json_search):
     """Register the /api/chat SSE endpoint. Called from routes.py."""
 
