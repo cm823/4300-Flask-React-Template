@@ -429,7 +429,7 @@ def generate_rabbit_hole_svd(start_article, path_length=5, num_branches=3):
         nodes = top_idx[i:i+path_length]
         temp = []
         for node in nodes:
-            doc_vec = TERM_EMBEDDINGS @ (SINGULAR_VALUES * DOC_EMBEDDINGS[top_idx[i], :])
+            doc_vec = TERM_EMBEDDINGS @ (SINGULAR_VALUES * DOC_EMBEDDINGS[node, :])
             dims = top_query_dimensions(doc_vec @ TERM_EMBEDDINGS)
             dim_names = []
             dim_scores = []
