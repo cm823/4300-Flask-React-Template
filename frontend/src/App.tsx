@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import * as d3 from "d3";
 import "./App.css";
 import Chat from "./Chat";
 import * as THREE from "three";
@@ -311,284 +310,6 @@ function ArticleCard({ node, depth }: { node: ArticleNode; depth: number }) {
   );
 }
 
-/* SVD Cluster Graph — SNAP-style force-directed network, SVD tab only */
-interface GNode extends d3.SimulationNodeDatum {
-  id: string;
-  label: string;
-  cluster: number;
-  theme: string;
-  weight: number;
-}
-interface GEdge extends d3.SimulationLinkDatum<GNode> {
-  source: string | GNode;
-  target: string | GNode;
-}
-interface GData {
-  nodes: GNode[];
-  edges: GEdge[];
-  themes: string[];
-}
-
-// One distinct colour per unique theme (max ~10 themes)
-const THEME_PALETTE = [
-  "#60a5fa", "#a78bfa", "#34d399", "#f87171", "#fbbf24",
-  "#38bdf8", "#f472b6", "#a3e635", "#fb923c", "#e879f9",
-];
-
-function SvdClusterGraph() {
-  const svgRef = useRef<SVGSVGElement>(null);
-  const [gdata, setGdata] = useState<GData | null>(null);
-  const [tip, setTip] = useState<{ label: string; theme: string; color: string; x: number; y: number } | null>(null);
-
-  // Fetch once on mount
-  useEffect(() => {
-    fetch("/api/svd/graph?terms_per_theme=8")
-      .then((r) => r.json())
-      .then(setGdata);
-  }, []);
-
-  // Build / rebuild graph whenever data arrives — wait for real pixel dimensions
-  useEffect(() => {
-    if (!gdata || !svgRef.current) return;
-
-    const el = svgRef.current;
-
-    const build = (W: number, H: number) => {
-
-    const svg = d3.select(el);
-    svg.selectAll("*").remove();
-
-    const themeColor = (idx: number) => THEME_PALETTE[idx % THEME_PALETTE.length];
-
-    // Deep-copy so D3 can mutate x/y/vx/vy
-    const nodes: GNode[] = gdata.nodes.map((n) => ({ ...n }));
-    const byId = new Map(nodes.map((n) => [n.id, n]));
-
-    const edges: GEdge[] = gdata.edges.map((e) => ({
-      source: byId.get(e.source as string) ?? e.source,
-      target: byId.get(e.target as string) ?? e.target,
-    }));
-
-    // Pre-position nodes near cluster centres arranged in a circle
-    const numClusters = gdata.themes.length;
-    const centres = gdata.themes.map((_, i) => {
-      const angle = (i / numClusters) * 2 * Math.PI - Math.PI / 2;
-      const r = Math.min(W, H) * 0.3;
-      return { x: W / 2 + r * Math.cos(angle), y: H / 2 + r * Math.sin(angle) };
-    });
-    nodes.forEach((n) => {
-      const c = centres[n.cluster];
-      n.x = c.x + (Math.random() - 0.5) * 70;
-      n.y = c.y + (Math.random() - 0.5) * 70;
-    });
-
-    const root = svg.append("g");
-
-    // Edges (drawn first so nodes sit on top)
-    const linkSel = root
-      .append("g")
-      .selectAll<SVGLineElement, GEdge>("line")
-      .data(edges)
-      .join("line")
-      .attr("stroke", (d) => themeColor((d.source as GNode).cluster))
-      .attr("stroke-opacity", 0.18)
-      .attr("stroke-width", 1.2);
-
-    // Node groups
-    const nodeG = root
-      .append("g")
-      .selectAll<SVGGElement, GNode>("g")
-      .data(nodes)
-      .join("g");
-
-    const nodeR = (d: GNode) => 5 + Math.sqrt(d.weight) * 9;
-
-    nodeG
-      .append("circle")
-      .attr("r", nodeR)
-      .attr("fill", (d) => themeColor(d.cluster))
-      .attr("fill-opacity", 0.78)
-      .attr("stroke", (d) => themeColor(d.cluster))
-      .attr("stroke-width", 1.5)
-      .attr("stroke-opacity", 0.45);
-
-    nodeG
-      .append("text")
-      .text((d) => d.label)
-      .attr("text-anchor", "middle")
-      .attr("dy", "0.35em")
-      .attr("font-size", "8.5px")
-      .attr("font-family", "Lato, sans-serif")
-      .attr("fill", "#fff")
-      .attr("fill-opacity", 0.88)
-      .attr("pointer-events", "none");
-
-    // Cluster theme labels — repositioned each tick
-    const clusterLabelSel = root
-      .append("g")
-      .selectAll<SVGTextElement, { theme: string; idx: number }>("text")
-      .data(gdata.themes.map((theme, idx) => ({ theme, idx })))
-      .join("text")
-      .attr("font-size", "10px")
-      .attr("font-weight", "700")
-      .attr("font-family", "Lato, sans-serif")
-      .attr("letter-spacing", "0.07em")
-      .attr("fill", (d) => themeColor(d.idx))
-      .attr("fill-opacity", 0.7)
-      .attr("pointer-events", "none")
-      .text((d) => d.theme.toUpperCase());
-
-    // Hover
-    nodeG
-      .on("mouseenter", (event: MouseEvent, d: GNode) => {
-        setTip({ label: d.label, theme: d.theme, color: themeColor(d.cluster), x: event.clientX, y: event.clientY });
-        d3.select(event.currentTarget as Element)
-          .select("circle")
-          .attr("fill-opacity", 1)
-          .attr("r", nodeR(d) + 3);
-      })
-      .on("mousemove", (event: MouseEvent) =>
-        setTip((t) => (t ? { ...t, x: event.clientX, y: event.clientY } : null)),
-      )
-      .on("mouseleave", (event: MouseEvent, d: GNode) => {
-        setTip(null);
-        d3.select(event.currentTarget as Element)
-          .select("circle")
-          .attr("fill-opacity", 0.78)
-          .attr("r", nodeR(d));
-      });
-
-    // D3 force simulation (SNAP-style: repulsion + cluster attraction + link cohesion)
-    const sim = d3
-      .forceSimulation<GNode>(nodes)
-      .force(
-        "link",
-        d3.forceLink<GNode, GEdge>(edges).id((d) => d.id).distance(50).strength(0.35),
-      )
-      .force("charge", d3.forceManyBody<GNode>().strength(-130))
-      .force("collide", d3.forceCollide<GNode>((d) => nodeR(d) + 5))
-      .force("cluster", () => {
-        // Pull each node toward its theme-cluster centre
-        nodes.forEach((n) => {
-          const c = centres[n.cluster];
-          n.vx = (n.vx ?? 0) + (c.x - (n.x ?? 0)) * 0.04;
-          n.vy = (n.vy ?? 0) + (c.y - (n.y ?? 0)) * 0.04;
-        });
-      })
-      .force("bounds", () => {
-        // Keep nodes inside the canvas
-        const pad = 55;
-        nodes.forEach((n) => {
-          const r = nodeR(n);
-          if ((n.x ?? 0) - r < pad)       n.vx = (n.vx ?? 0) + 1.5;
-          if ((n.x ?? 0) + r > W - pad)   n.vx = (n.vx ?? 0) - 1.5;
-          if ((n.y ?? 0) - r < pad)       n.vy = (n.vy ?? 0) + 1.5;
-          if ((n.y ?? 0) + r > H - pad)   n.vy = (n.vy ?? 0) - 1.5;
-        });
-      })
-      .on("tick", () => {
-        linkSel
-          .attr("x1", (d) => (d.source as GNode).x ?? 0)
-          .attr("y1", (d) => (d.source as GNode).y ?? 0)
-          .attr("x2", (d) => (d.target as GNode).x ?? 0)
-          .attr("y2", (d) => (d.target as GNode).y ?? 0);
-
-        nodeG.attr("transform", (d) => `translate(${d.x ?? 0},${d.y ?? 0})`);
-
-        // Recompute label positions — placed outward from graph centre
-        clusterLabelSel.each(function (d) {
-          const members = nodes.filter((n) => n.cluster === d.idx);
-          const cx = d3.mean(members, (m) => m.x) ?? centres[d.idx].x;
-          const cy = d3.mean(members, (m) => m.y) ?? centres[d.idx].y;
-
-          // Angle from graph centre to cluster centroid
-          const dx = cx - W / 2;
-          const dy = cy - H / 2;
-          const angle = Math.atan2(dy, dx); // -PI..PI
-          const PAD = 28;
-
-          let lx: number, ly: number, anchor: string;
-          const absDeg = Math.abs(angle) * (180 / Math.PI);
-
-          if (absDeg < 45) {
-            // cluster on the right → label to the right
-            lx = (d3.max(members, (m) => (m.x ?? 0) + nodeR(m)) ?? cx) + PAD;
-            ly = cy;
-            anchor = "start";
-          } else if (absDeg > 135) {
-            // cluster on the left → label to the left
-            lx = (d3.min(members, (m) => (m.x ?? 0) - nodeR(m)) ?? cx) - PAD;
-            ly = cy;
-            anchor = "end";
-          } else if (dy < 0) {
-            // cluster toward top → label above
-            lx = cx;
-            ly = (d3.min(members, (m) => (m.y ?? 0) - nodeR(m)) ?? cy) - PAD;
-            anchor = "middle";
-          } else {
-            // cluster toward bottom → label below
-            lx = cx;
-            ly = (d3.max(members, (m) => (m.y ?? 0) + nodeR(m)) ?? cy) + PAD + 12;
-            anchor = "middle";
-          }
-
-          // Clamp so labels never spill outside the SVG
-          lx = Math.max(90, Math.min(W - 90, lx));
-          ly = Math.max(14, Math.min(H - 14, ly));
-
-          d3.select(this).attr("x", lx).attr("y", ly).attr("text-anchor", anchor);
-        });
-      });
-
-      return () => { sim.stop(); };
-    };  // end build()
-
-    // Use ResizeObserver so we wait until the SVG has real layout dimensions
-    let cleanup: (() => void) | undefined;
-    const ro = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect;
-      if (width > 0 && height > 0) {
-        ro.disconnect();
-        cleanup = build(width, height) as (() => void) | undefined;
-      }
-    });
-    ro.observe(el);
-
-    // If already sized, fire immediately
-    if (el.clientWidth > 0 && el.clientHeight > 0) {
-      ro.disconnect();
-      cleanup = build(el.clientWidth, el.clientHeight) as (() => void) | undefined;
-    }
-
-    return () => { ro.disconnect(); cleanup?.(); };
-  }, [gdata]);
-
-  return (
-    <div className="svd-graph-wrap">
-      <div className="svd-graph-header">
-        <h3 className="svd-graph-title">SVD Semantic Clusters</h3>
-        <p className="svd-graph-sub">
-          Each cluster is a latent topic the SVD discovered. Terms that load
-          together explain why certain results appear.
-        </p>
-      </div>
-      <div className="svd-graph-canvas">
-        {!gdata && <p className="svd-graph-loading">Building graph…</p>}
-        <svg ref={svgRef} className="svd-graph-svg" />
-        {tip && (
-          <div
-            className="svd-graph-tip"
-            style={{ left: tip.x + 14, top: tip.y - 32 }}
-          >
-            <strong style={{ color: tip.color }}>{tip.label}</strong>
-            <span className="svd-graph-tip-theme"> · {tip.theme}</span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 /* Branch Radar / Spider Chart — SVD tab only */
 const BRANCH_COLORS = ["#93c5fd", "#a5b4fc", "#c4b5fd"];
 
@@ -718,6 +439,100 @@ function BranchRadar({ branch, index }: { branch: ArticleNode[]; index: number }
   );
 }
 
+/* Per-document radar chart — SVD tab only */
+function NodeRadar({ node, color }: { node: ArticleNode; color: string }) {
+  if (!node.dimensions || !node.dimensionScores || node.dimensions.length < 3) return null;
+
+  const themes = [...node.dimensions];
+  const rawScores = node.dimensionScores.map(Math.abs);
+  const maxScore = Math.max(...rawScores);
+  if (maxScore === 0) return null;
+  const normalized = rawScores.map((s) => s / maxScore);
+
+  const SIZE = 200;
+  const cx = SIZE / 2;
+  const cy = SIZE / 2;
+  const r = SIZE * 0.3;
+  const labelR = SIZE * 0.46;
+  const n = themes.length;
+
+  const angle = (i: number) => (i / n) * 2 * Math.PI - Math.PI / 2;
+  const ptx = (i: number, s: number) => cx + Math.cos(angle(i)) * r * s;
+  const pty = (i: number, s: number) => cy + Math.sin(angle(i)) * r * s;
+
+  const gridLevels = [0.25, 0.5, 0.75, 1.0];
+  const dataPoints = normalized.map((s, i) => `${ptx(i, s)},${pty(i, s)}`).join(" ");
+
+  return (
+    <div className="node-radar-wrap">
+      <p className="node-radar-title">{node.title}</p>
+      <svg
+        viewBox={`-40 -20 ${SIZE + 80} ${SIZE + 40}`}
+        className="node-radar-svg"
+        aria-hidden="true"
+      >
+        {gridLevels.map((level) => (
+          <polygon
+            key={level}
+            points={themes.map((_, i) => `${ptx(i, level)},${pty(i, level)}`).join(" ")}
+            fill="none"
+            stroke="rgba(255,255,255,0.07)"
+            strokeWidth={0.8}
+          />
+        ))}
+        {themes.map((_, i) => (
+          <line
+            key={i}
+            x1={cx} y1={cy}
+            x2={ptx(i, 1)} y2={pty(i, 1)}
+            stroke="rgba(255,255,255,0.1)"
+            strokeWidth={0.7}
+          />
+        ))}
+        <polygon
+          points={dataPoints}
+          fill={color}
+          fillOpacity={0.18}
+          stroke={color}
+          strokeWidth={1.5}
+          strokeOpacity={0.85}
+          strokeLinejoin="round"
+        />
+        {normalized.map((s, i) => (
+          <circle
+            key={i}
+            cx={ptx(i, s)}
+            cy={pty(i, s)}
+            r={3}
+            fill={color}
+            fillOpacity={0.9}
+          />
+        ))}
+        {themes.map((theme, i) => {
+          const lx = cx + Math.cos(angle(i)) * labelR;
+          const ly = cy + Math.sin(angle(i)) * labelR;
+          const ta = lx < cx - 8 ? "end" : lx > cx + 8 ? "start" : "middle";
+          return (
+            <text
+              key={i}
+              x={lx}
+              y={ly}
+              textAnchor={ta}
+              dominantBaseline="middle"
+              fontSize="7.5"
+              fontFamily="Lato, sans-serif"
+              fill="rgba(210,225,255,0.55)"
+              letterSpacing="0.03em"
+            >
+              {shortLabel(theme)}
+            </text>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
 /* Algorithm Toggle */
 function AlgoToggle({
   value,
@@ -753,18 +568,6 @@ export default function App(): JSX.Element {
   const [numArticles, setNumArticles] = useState(5);
   const [underground, setUnderground] = useState(false);
   const [activeBranch, setActiveBranch] = useState<number | null>(null);
-  const [showSvdViz, setShowSvdViz] = useState(false);
-  const svdVizRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (showSvdViz) {
-      // Give React one frame to mount/show the element before scrolling
-      requestAnimationFrame(() => {
-        svdVizRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
-    }
-  }, [showSvdViz]);
-
   useEffect(() => {
     fetch("/api/config")
       .then((r) => r.json())
@@ -911,14 +714,6 @@ export default function App(): JSX.Element {
           <button className="surface-btn" onClick={handleSurface}>
             ↑ Back to Surface
           </button>
-          {scoringMode === "svd" && hasSearched && (
-            <button
-              className={`svd-viz-btn ${showSvdViz ? "active" : ""}`}
-              onClick={() => setShowSvdViz((v) => !v)}
-            >
-              SVD Visualization
-            </button>
-          )}
         </div>
 
         {loading && (
@@ -969,16 +764,23 @@ export default function App(): JSX.Element {
                       <ArticleCard key={node.id} node={node} depth={di} />
                     ))}
                   </div>
+                  {scoringMode === "svd" && (
+                    <div className="node-radar-panel">
+                      {branch.map((node) =>
+                        node.dimensions && node.dimensionScores ? (
+                          <NodeRadar
+                            key={node.id}
+                            node={node}
+                            color={BRANCH_COLORS[bi % BRANCH_COLORS.length]}
+                          />
+                        ) : null
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           </section>
-        )}
-
-        {scoringMode === "svd" && showSvdViz && (
-          <div ref={svdVizRef}>
-            <SvdClusterGraph />
-          </div>
         )}
 
         {useLlm && (
