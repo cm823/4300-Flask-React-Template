@@ -828,7 +828,7 @@ export default function App(): JSX.Element {
           <form className="search-form" onSubmit={handleSearch}>
             <input
               className="search-input"
-              placeholder="Starting article…"
+              placeholder="Enter a phrase describing a category of articles (ex. 'American participants in the Winter Olympics')"
               value={article}
               onChange={(e) => setArticle(e.target.value)}
               required
