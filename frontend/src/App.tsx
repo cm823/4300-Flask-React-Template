@@ -311,229 +311,6 @@ function ArticleCard({ node, depth }: { node: ArticleNode; depth: number }) {
   );
 }
 
-/* Branch Radar / Spider Chart — SVD tab only */
-const BRANCH_COLORS = ["#93c5fd", "#a5b4fc", "#c4b5fd"];
-
-// Shorten theme labels so they fit on the chart axes
-function shortLabel(t: string) {
-  return t
-    .replace("& Television", "& TV")
-    .replace("& Team Sports", "")
-    .replace("& South Asian", "")
-    .replace(", Gaming & Comics", "")
-    .replace("& Theatre", "")
-    .replace("& Athletics", "")
-    .replace("& Journalism", "")
-    .replace("& Government", "")
-    .replace("& Ice Hockey", "")
-    .replace("& Racing", "")
-    .trim();
-}
-
-function BranchRadar({ branch, index }: { branch: ArticleNode[]; index: number }) {
-  // Sum absolute dimensionScores per theme across all articles in the branch
-  const themeScores: Record<string, number> = {};
-  branch.forEach((node) => {
-    if (node.dimensions && node.dimensionScores) {
-      node.dimensions.forEach((theme, i) => {
-        themeScores[theme] = (themeScores[theme] ?? 0) + Math.abs(node.dimensionScores![i]);
-      });
-    }
-  });
-
-  const themes = Object.keys(themeScores);
-  if (themes.length < 3) return null;
-
-  // Sort by descending score so dominant themes get prime axis positions
-  themes.sort((a, b) => themeScores[b] - themeScores[a]);
-
-  const maxScore = Math.max(...themes.map((t) => themeScores[t]));
-  const normalized = themes.map((t) => themeScores[t] / maxScore);
-
-  const SIZE = 280;
-  const cx = SIZE / 2;
-  const cy = SIZE / 2;
-  const r = SIZE * 0.32;       // radius of the outer ring
-  const labelR = SIZE * 0.47;  // radius at which axis labels sit
-  const n = themes.length;
-  const color = BRANCH_COLORS[index % BRANCH_COLORS.length];
-
-  const angle = (i: number) => (i / n) * 2 * Math.PI - Math.PI / 2;
-  const ptx = (i: number, s: number) => cx + Math.cos(angle(i)) * r * s;
-  const pty = (i: number, s: number) => cy + Math.sin(angle(i)) * r * s;
-
-  const gridLevels = [0.25, 0.5, 0.75, 1.0];
-  const dataPoints = normalized.map((s, i) => `${ptx(i, s)},${pty(i, s)}`).join(" ");
-
-  return (
-    <div className="branch-radar-wrap">
-      <p className="branch-radar-title">Theme Profile</p>
-      <svg
-        viewBox={`-40 -20 ${SIZE + 80} ${SIZE + 40}`}
-        className="branch-radar-svg"
-        aria-hidden="true"
-      >
-        {/* Grid rings */}
-        {gridLevels.map((level) => (
-          <polygon
-            key={level}
-            points={themes.map((_, i) => `${ptx(i, level)},${pty(i, level)}`).join(" ")}
-            fill="none"
-            stroke="rgba(255,255,255,0.07)"
-            strokeWidth={0.8}
-          />
-        ))}
-        {/* Axis spokes */}
-        {themes.map((_, i) => (
-          <line
-            key={i}
-            x1={cx} y1={cy}
-            x2={ptx(i, 1)} y2={pty(i, 1)}
-            stroke="rgba(255,255,255,0.1)"
-            strokeWidth={0.7}
-          />
-        ))}
-        {/* Data fill */}
-        <polygon
-          points={dataPoints}
-          fill={color}
-          fillOpacity={0.2}
-          stroke={color}
-          strokeWidth={2}
-          strokeOpacity={0.9}
-          strokeLinejoin="round"
-        />
-        {/* Data-point dots */}
-        {normalized.map((s, i) => (
-          <circle
-            key={i}
-            cx={ptx(i, s)}
-            cy={pty(i, s)}
-            r={4}
-            fill={color}
-            fillOpacity={0.95}
-          />
-        ))}
-        {/* Axis labels */}
-        {themes.map((theme, i) => {
-          const lx = cx + Math.cos(angle(i)) * labelR;
-          const ly = cy + Math.sin(angle(i)) * labelR;
-          const ta = lx < cx - 8 ? "end" : lx > cx + 8 ? "start" : "middle";
-          return (
-            <text
-              key={i}
-              x={lx}
-              y={ly}
-              textAnchor={ta}
-              dominantBaseline="middle"
-              fontSize="8"
-              fontFamily="Lato, sans-serif"
-              fill="rgba(210,225,255,0.6)"
-              letterSpacing="0.03em"
-            >
-              {shortLabel(theme)}
-            </text>
-          );
-        })}
-      </svg>
-    </div>
-  );
-}
-
-/* Per-document radar chart — SVD tab only */
-function NodeRadar({ node, color }: { node: ArticleNode; color: string }) {
-  if (!node.dimensions || !node.dimensionScores || node.dimensions.length < 3) return null;
-
-  const themes = [...node.dimensions];
-  const rawScores = node.dimensionScores.map(Math.abs);
-  const maxScore = Math.max(...rawScores);
-  if (maxScore === 0) return null;
-  const normalized = rawScores.map((s) => s / maxScore);
-
-  const SIZE = 200;
-  const cx = SIZE / 2;
-  const cy = SIZE / 2;
-  const r = SIZE * 0.3;
-  const labelR = SIZE * 0.46;
-  const n = themes.length;
-
-  const angle = (i: number) => (i / n) * 2 * Math.PI - Math.PI / 2;
-  const ptx = (i: number, s: number) => cx + Math.cos(angle(i)) * r * s;
-  const pty = (i: number, s: number) => cy + Math.sin(angle(i)) * r * s;
-
-  const gridLevels = [0.25, 0.5, 0.75, 1.0];
-  const dataPoints = normalized.map((s, i) => `${ptx(i, s)},${pty(i, s)}`).join(" ");
-
-  return (
-    <div className="node-radar-wrap">
-      <p className="node-radar-title">{node.title}</p>
-      <svg
-        viewBox={`-40 -20 ${SIZE + 80} ${SIZE + 40}`}
-        className="node-radar-svg"
-        aria-hidden="true"
-      >
-        {gridLevels.map((level) => (
-          <polygon
-            key={level}
-            points={themes.map((_, i) => `${ptx(i, level)},${pty(i, level)}`).join(" ")}
-            fill="none"
-            stroke="rgba(255,255,255,0.07)"
-            strokeWidth={0.8}
-          />
-        ))}
-        {themes.map((_, i) => (
-          <line
-            key={i}
-            x1={cx} y1={cy}
-            x2={ptx(i, 1)} y2={pty(i, 1)}
-            stroke="rgba(255,255,255,0.1)"
-            strokeWidth={0.7}
-          />
-        ))}
-        <polygon
-          points={dataPoints}
-          fill={color}
-          fillOpacity={0.18}
-          stroke={color}
-          strokeWidth={1.5}
-          strokeOpacity={0.85}
-          strokeLinejoin="round"
-        />
-        {normalized.map((s, i) => (
-          <circle
-            key={i}
-            cx={ptx(i, s)}
-            cy={pty(i, s)}
-            r={3}
-            fill={color}
-            fillOpacity={0.9}
-          />
-        ))}
-        {themes.map((theme, i) => {
-          const lx = cx + Math.cos(angle(i)) * labelR;
-          const ly = cy + Math.sin(angle(i)) * labelR;
-          const ta = lx < cx - 8 ? "end" : lx > cx + 8 ? "start" : "middle";
-          return (
-            <text
-              key={i}
-              x={lx}
-              y={ly}
-              textAnchor={ta}
-              dominantBaseline="middle"
-              fontSize="7.5"
-              fontFamily="Lato, sans-serif"
-              fill="rgba(210,225,255,0.55)"
-              letterSpacing="0.03em"
-            >
-              {shortLabel(theme)}
-            </text>
-          );
-        })}
-      </svg>
-    </div>
-  );
-}
-
 /* Algorithm Toggle */
 function AlgoToggle({
   value,
@@ -569,6 +346,8 @@ export default function App(): JSX.Element {
   const [numArticles, setNumArticles] = useState(5);
   const [underground, setUnderground] = useState(false);
   const [activeBranch, setActiveBranch] = useState<number | null>(null);
+  const [modifiedQuery, setModifiedQuery] = useState<string | null>(null);
+  const [ragSummary, setRagSummary] = useState<string | null>(null);
   useEffect(() => {
     fetch("/api/config")
       .then((r) => r.json())
@@ -582,12 +361,26 @@ export default function App(): JSX.Element {
       setLoading(true);
       setHasSearched(false);
       setUnderground(true);
+      setModifiedQuery(null);
+      setRagSummary(null);
       try {
-        const res = await fetch(
-          `/api/rabbithole?article=${encodeURIComponent(article)}&scoring_mode=${scoringMode}&path_length=${numArticles}`,
-        );
-        const data: ArticleNode[][] = await res.json();
-        setBranches(data);
+        const res = await fetch("/api/rag_query", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            article,
+            scoring_mode: scoringMode,
+            path_length: numArticles,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          console.error("rag_query error:", data);
+        } else {
+          setBranches(data.results ?? []);
+          setModifiedQuery(data.modified_query ?? null);
+          setRagSummary(data.summary ?? null);
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -602,6 +395,8 @@ export default function App(): JSX.Element {
     setUnderground(false);
     setBranches([]);
     setHasSearched(false);
+    setModifiedQuery(null);
+    setRagSummary(null);
   };
 
   if (useLlm === null) return <></>;
@@ -735,6 +530,17 @@ export default function App(): JSX.Element {
           </div>
         )}
 
+        {(modifiedQuery || ragSummary) && (
+          <div className="rag-context">
+            {modifiedQuery && (
+              <p className="rag-modified-query">
+                <span className="rag-label">Reformatted Query:</span> {modifiedQuery}
+              </p>
+            )}
+            {ragSummary && <p className="rag-summary">{ragSummary}</p>}
+          </div>
+        )}
+
         {branches.length > 0 && (
           <section className="branch-section">
             <p className="branch-hint">
@@ -757,27 +563,11 @@ export default function App(): JSX.Element {
                   {branch[0]?.description && (
                     <p className="branch-desc">{branch[0].description}</p>
                   )}
-                  {scoringMode === "svd" && (
-                    <BranchRadar branch={branch} index={bi} />
-                  )}
                   <div className="cards-stack">
                     {branch.map((node, di) => (
                       <ArticleCard key={node.id} node={node} depth={di} />
                     ))}
                   </div>
-                  {scoringMode === "svd" && (
-                    <div className="node-radar-panel">
-                      {branch.map((node) =>
-                        node.dimensions && node.dimensionScores ? (
-                          <NodeRadar
-                            key={node.id}
-                            node={node}
-                            color={BRANCH_COLORS[bi % BRANCH_COLORS.length]}
-                          />
-                        ) : null
-                      )}
-                    </div>
-                  )}
                 </div>
               ))}
             </div>

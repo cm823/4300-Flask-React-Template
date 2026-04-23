@@ -43,6 +43,101 @@ def llm_search_decision(client, user_message):
     return False, None
 
 
+def rewrite_query(client, original_query):
+    """Ask the LLM to expand the query with synonyms for better retrieval."""
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are a search query optimizer for a Wikipedia discovery engine. "
+                "Given a user query, do the following:\n"
+                "1. Identify the most important keywords in the query.\n"
+                "2. Find meaningful synonyms or related terms for each keyword.\n"
+                "3. Return the original query with those synonyms added to it.\n"
+                "Return only the expanded query — no explanation, no bullet points, no punctuation at the end."
+            ),
+        },
+        {"role": "user", "content": original_query},
+    ]
+    response = client.chat(messages)
+    rewritten = (response.get("content") or "").strip()
+    return rewritten if rewritten else original_query
+
+
+def generate_summary(client, original_query, articles):
+    """Ask the LLM to summarize why the retrieved articles are relevant."""
+    titles_text = "\n".join(f"- {a['title']}" for a in articles)
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are a helpful assistant for a Wikipedia discovery engine. "
+                "Given a user's query and a list of retrieved Wikipedia articles, "
+                "write 2-3 sentences explaining why these articles are relevant to the query "
+                "and what interesting connections exist between them. Be engaging and concise."
+            ),
+        },
+        {
+            "role": "user",
+            "content": f'User query: "{original_query}"\n\nRetrieved articles:\n{titles_text}',
+        },
+    ]
+    response = client.chat(messages)
+    return (response.get("content") or "").strip()
+
+
+def register_rag_route(app, run_pipeline):
+    """Register POST /api/rag_query. run_pipeline(query, scoring_mode, path_length) -> branches."""
+
+    @app.route("/api/rag_query", methods=["POST"])
+    def rag_query():
+        data = request.get_json() or {}
+        original_query = (data.get("article") or "").strip()
+        scoring_mode = data.get("scoring_mode", "tfidf")
+        path_length = int(data.get("path_length", 5))
+
+        if not original_query:
+            return jsonify({"error": "article is required"}), 400
+
+        modified_query = original_query
+        summary = ""
+
+        # Step 1: rewrite the query (best-effort — fall back to original on failure)
+        api_key = os.getenv("API_KEY")
+        client = LLMClient(api_key=api_key) if api_key else None
+
+        if client:
+            try:
+                modified_query = rewrite_query(client, original_query)
+                logger.info(f"RAG query rewrite: '{original_query}' -> '{modified_query}'")
+            except Exception as e:
+                logger.error(f"Query rewrite failed: {e}")
+                modified_query = original_query
+
+        # Step 2: run the IR pipeline with the modified query
+        try:
+            branches = run_pipeline(modified_query, scoring_mode, path_length)
+        except Exception as e:
+            logger.error(f"IR pipeline failed: {e}")
+            return jsonify({"error": f"IR pipeline error: {e}"}), 500
+
+        # Step 3: generate a summary (best-effort — skip on failure)
+        if client:
+            all_articles = [node for branch in branches for node in branch]
+            if all_articles:
+                try:
+                    summary = generate_summary(client, original_query, all_articles)
+                except Exception as e:
+                    logger.error(f"Summary generation failed: {e}")
+
+        return jsonify({
+            "original_query": original_query,
+            "modified_query": modified_query,
+            "summary": summary,
+            "results": branches,
+        })
+
+
 def register_chat_route(app, json_search):
     """Register the /api/chat SSE endpoint. Called from routes.py."""
 
