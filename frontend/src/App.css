@@ -477,29 +477,6 @@ body {
   box-shadow: 0 0 20px rgba(147, 197, 253, 0.2);
 }
 
-.svd-viz-btn {
-  background: rgba(165, 180, 252, 0.08);
-  border: 1px solid rgba(165, 180, 252, 0.3);
-  border-radius: var(--radius-lg);
-  padding: 0.5rem 1.4rem;
-  font-family: "Lato", sans-serif;
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(196, 181, 253, 0.85);
-  cursor: pointer;
-  backdrop-filter: blur(12px);
-  transition: background 0.2s, box-shadow 0.2s, color 0.2s;
-}
-
-.svd-viz-btn:hover,
-.svd-viz-btn.active {
-  background: rgba(165, 180, 252, 0.2);
-  color: rgba(216, 201, 255, 1);
-  box-shadow: 0 0 18px rgba(165, 180, 252, 0.25);
-}
-
 /* Underground loading spinner */
 .ug-loading {
   display: flex;
@@ -741,93 +718,6 @@ body {
   color: var(--text-primary);
 }
 
-/* ── SVD Cluster Graph ─────────────────────────────────────────────────────── */
-.svd-graph-wrap {
-  width: 100%;
-  min-height: unset;
-  padding: 1.8rem 0.5rem 1.5rem;
-  background:
-    radial-gradient(
-      ellipse at 20% 30%,
-      rgba(45, 30, 80, 0.6) 0%,
-      transparent 60%
-    ),
-    radial-gradient(
-      ellipse at 80% 70%,
-      rgba(30, 20, 60, 0.5) 0%,
-      transparent 55%
-    ),
-    linear-gradient(180deg, #0d0920 0%, #130d25 40%, #0e0b1a 100%);
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-}
-
-.svd-graph-header {
-  margin-bottom: 1.2rem;
-  text-align: center;
-}
-
-.svd-graph-title {
-  font-family: "Cormorant Garamond", serif;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0 0 0.25rem 0;
-}
-
-.svd-graph-sub {
-  font-family: "Lato", sans-serif;
-  font-size: 0.78rem;
-  color: rgba(147, 197, 253, 0.5);
-  margin: 0;
-  line-height: 1.5;
-}
-
-.svd-graph-canvas {
-  position: relative;
-  width: 100%;
-  height: 88vh;
-}
-
-.svd-graph-svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-.svd-graph-loading {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: rgba(147, 197, 253, 0.45);
-  font-family: "Lato", sans-serif;
-  font-size: 0.88rem;
-  pointer-events: none;
-}
-
-.svd-graph-tip {
-  position: fixed;
-  pointer-events: none;
-  z-index: 300;
-  background: rgba(8, 4, 22, 0.92);
-  border: 1px solid rgba(165, 180, 252, 0.25);
-  border-radius: 8px;
-  padding: 0.3rem 0.8rem;
-  font-family: "Lato", sans-serif;
-  font-size: 0.82rem;
-  color: #fff;
-  white-space: nowrap;
-  backdrop-filter: blur(8px);
-}
-
-.svd-graph-tip-theme {
-  color: rgba(255, 255, 255, 0.45);
-  font-size: 0.75rem;
-}
-
 /* ── Branch Radar Chart (SVD tab) ──────────────────────────────────────────── */
 .branch-radar-wrap {
   display: flex;
@@ -851,6 +741,48 @@ body {
 .branch-radar-svg {
   width: 100%;
   max-width: 190px;
+  height: auto;
+  overflow: visible;
+}
+
+/* ── Per-document Node Radar ───────────────────────────────────────────────── */
+.node-radar-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.8rem 0.5rem 1rem;
+  position: relative;
+  z-index: 5;
+}
+
+.node-radar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.6rem 0.5rem 0.3rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(147, 197, 253, 0.08);
+  border-radius: 10px;
+}
+
+.node-radar-title {
+  font-family: "Lato", sans-serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(147, 197, 253, 0.5);
+  margin: 0 0 0.3rem;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.node-radar-svg {
+  width: 100%;
+  max-width: 170px;
   height: auto;
   overflow: visible;
 }
