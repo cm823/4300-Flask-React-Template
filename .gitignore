@@ -28,4 +28,4 @@ frontend/dist/
 frontend/node_modules/
 package-lock.json
 
-.env
+.envinverted_index3.db
