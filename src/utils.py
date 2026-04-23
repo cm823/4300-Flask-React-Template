@@ -3,116 +3,118 @@ import re
 import json
 import os
 import numpy as np
+from sklearn.externals.array_api_compat.dask.array import vecdot
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 from nltk.stem import PorterStemmer
 from collections import defaultdict
 import logging
+import random
 
 stemmer = PorterStemmer()
-stemmed_stopwords = list({stemmer.stem(w) for w in ENGLISH_STOP_WORDS}) \
-                     + ['anywh', 'becau', 'el', 'elsewh', 'everywh', 'ind', 'otherwi', 'plea', 'somewh']
+stemmed_stopwords = set(list({stemmer.stem(w) for w in ENGLISH_STOP_WORDS}) \
+                     + ['anywh', 'becau', 'el', 'elsewh', 'everywh', 'ind', 'otherwi', 'plea', 'somewh'])
 
 dimension_themes = {
     0:  "Film & Television",
-    1:  "Football & Team Sports",
+    1:  "Film & Television",
     2:  "Music",
     3:  "Music",
     4:  "Film & Television",
-    5:  "Football & Team Sports",
+    5:  "Basketball",
     6:  "Football & Team Sports",
-    7:  "Combat Sports & Racing",
-    8:  "Baseball & Ice Hockey",
-    9:  "Football & Team Sports",
-    10: "Music",
-    11: "Film & Television",
-    12: "Football & Team Sports",
-    13: "Baseball & Ice Hockey",
-    14: "Baseball & Ice Hockey",
+    7:  "Baseball",
+    8:  "Politics & Government",
+    9:  "Film & Television",
+    10: "Combat Sports & Wrestling",
+    11: "Ice Hockey",
+    12: "Film & Television",
+    13: "Ice Hockey",
+    14: "Music",
     15: "Indian Cinema & South Asian",
-    16: "Film & Television",
+    16: "Broadcasting & Journalism",
     17: "Football & Team Sports",
-    18: "Animation, Gaming & Comics",
-    19: "Combat Sports & Racing",
-    20: "Combat Sports & Racing",
-    21: "Literature & Theatre",
-    22: "Literature & Theatre",
-    23: "Olympics & Athletics",
-    24: "Music",
-    25: "Combat Sports & Racing",
-    26: "Animation, Gaming & Comics",
-    27: "Combat Sports & Racing",
-    28: "Politics & Government",
-    29: "Nationality",
-    30: "Combat Sports & Racing",
-    31: "Film & Television",
+    18: "Literature & Academia",
+    19: "Geography – New York",
+    20: "Combat Sports & Wrestling",
+    21: "Football & Team Sports",
+    22: "Broadcasting & Journalism",
+    23: "Literature & Academia",
+    24: "Politics & Government",
+    25: "Cricket",
+    26: "Film & Television",
+    27: "Film & Television",
+    28: "Music",
+    29: "Geography – New York",
+    30: "Crime & Legal",
+    31: "Motor Racing",
     32: "Broadcasting & Journalism",
-    33: "Combat Sports & Racing",
-    34: "Combat Sports & Racing",
-    35: "Broadcasting & Journalism",
-    36: "Animation, Gaming & Comics",
-    37: "Nationality",
-    38: "Literature & Theatre",
-    39: "Film & Television",
-    40: "Nationality",
-    41: "Nationality",
-    42: "Animation, Gaming & Comics",
-    43: "Nationality",
-    44: "Film & Television",
-    45: "Indian Cinema & South Asian",
-    46: "Nationality",
-    47: "Film & Television",
-    48: "Literature & Theatre",
-    49: "Nationality",
-    50: "Nationality",
-    51: "Music",
-    52: "Nationality",
-    53: "Nationality",
-    54: "Nationality",
-    55: "Broadcasting & Journalism",
+    33: "Business & Corporate",
+    34: "Fashion & Modelling",
+    35: "Indian Cinema & South Asian",
+    36: "Olympics & Athletics",
+    37: "Politics & Government",
+    38: "Australian Sports & Rugby",
+    39: "Fashion & Modelling",
+    40: "Politics & Government",
+    41: "Broadcasting & Journalism",
+    42: "Music",
+    43: "Animation, Gaming & Comics",
+    44: "Music",
+    45: "Theatre & Stage",
+    46: "Animation, Gaming & Comics",
+    47: "Australian Sports & Rugby",
+    48: "Animation, Gaming & Comics",
+    49: "Olympics & Athletics",
+    50: "Nationality – British",
+    51: "Nationality – British/English",
+    52: "Nationality – British",
+    53: "Literature & Academia",
+    54: "Nationality – Canadian",
+    55: "Animation, Gaming & Comics",
     56: "Indian Cinema & South Asian",
-    57: "Nationality",
-    58: "Film & Television",
-    59: "Literature & Theatre",
-    60: "Broadcasting & Journalism",
-    61: "Literature & Theatre",
-    62: "Nationality",
-    63: "Broadcasting & Journalism",
-    64: "Politics & Government",
-    65: "Nationality",
-    66: "Broadcasting & Journalism",
+    57: "Music",
+    58: "Nationality – German",
+    59: "Nationality – Canadian",
+    60: "Nationality – French",
+    61: "Indian Cinema & South Asian",
+    62: "Nationality – French/Canadian",
+    63: "Nationality – Canadian",
+    64: "Nationality – British",
+    65: "Indian Cinema & South Asian",
+    66: "Nationality – Canadian",
     67: "Animation, Gaming & Comics",
-    68: "Broadcasting & Journalism",
-    69: "Broadcasting & Journalism",
-    70: "Indian Cinema & South Asian",
-    71: "Politics & Government",
-    72: "Literature & Theatre",
-    73: "Politics & Government",
-    74: "Nationality",
-    75: "Nationality",
-    76: "Literature & Theatre",
-    77: "Olympics & Athletics",
-    78: "Literature & Theatre",
-    79: "Olympics & Athletics",
-    80: "Animation, Gaming & Comics",
-    81: "Olympics & Athletics",
-    82: "Animation, Gaming & Comics",
-    83: "Olympics & Athletics",
-    84: "Literature & Theatre",
-    85: "Nationality",
-    86: "Olympics & Athletics",
-    87: "Olympics & Athletics",
-    88: "Nationality",
-    89: "Nationality",
-    90: "Nationality",
-    91: "Nationality",
-    92: "Nationality",
-    93: "Olympics & Athletics",
-    94: "Nationality",
-    95: "Nationality",
-    96: "Olympics & Athletics",
-    97: "Nationality",
-    98: "Politics & Government",
-    99: "Nationality",
+    68: "Nationality – Canadian",
+    69: "Theatre & Stage",
+    70: "Nationality – South/Japanese",
+    71: "Broadcasting & Journalism",
+    72: "Geography – Los Angeles",
+    73: "Nationality – British/English",
+    74: "Geography – Los Angeles",
+    75: "Nationality – Australian/Japanese",
+    76: "Nationality – Japanese",
+    77: "Theatre & Stage",
+    78: "Nationality – Japanese/German",
+    79: "Nationality – French/German",
+    80: "Nationality – South African",
+    81: "Business & Corporate",
+    82: "Nationality – French",
+    83: "Nationality – Japanese/Canadian",
+    84: "Theatre & Stage",
+    85: "Boxing",
+    86: "Nationality – Japanese",
+    87: "Broadcasting & Journalism",
+    88: "Nationality – French/Chinese",
+    89: "Nationality – German/Italian/Russian",
+    90: "Nationality – New Zealand",
+    91: "Music",
+    92: "Golf",
+    93: "Literature & Academia",
+    94: "Middle East & Iran",
+    95: "Nationality – Russian/Soviet",
+    96: "Nationality – Irish",
+    97: "Nationality – Italian",
+    98: "Nationality – German/Italian",
+    99: "Nationality – German",
 }
 
 DOC_MAP = {}
@@ -123,6 +125,7 @@ DOC_EMBEDDINGS = np.zeros(1)
 TERM_EMBEDDINGS = np.zeros(1)
 SINGULAR_VALUES = np.zeros(1)
 DOC_IDS_SVD = {}
+DOC_IDS_SVD_REVERSE = {}
 
 logger = logging.getLogger(__name__)
 gunicorn_logger = logging.getLogger('gunicorn.info')
@@ -148,21 +151,26 @@ def decode_postings(blob):
 
 def stem_tokenizer(text):
     words = re.findall(r"\w+", text.lower())
-    return [stemmer.stem(w) for w in words]
+    words = [word for word in words if word not in stemmed_stopwords]
+    n_grams = []
+    for i in range(2, 4):
+        for j in range(len(words)-i+1):
+            n_grams.append(" ".join(words[j:j+i]))
+    return [stemmer.stem(w) for w in words + n_grams]
 
 current_directory = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_directory)
 DATA_DIR = os.path.join(project_root, 'data')
 
 def load_data():
-    global DOC_MAP, REVERSE_DOC_MAP, WORD_MAP, WORD_ID_TO_TERM, DOC_EMBEDDINGS, TERM_EMBEDDINGS, DOC_IDS_SVD, SINGULAR_VALUES
-    doc_path = os.path.join(DATA_DIR, "doc_map2.json")
-    word_path = os.path.join(DATA_DIR, "word_map2.json")
-    doc_embeddings_path_1 = os.path.join(DATA_DIR, "svd_scipy", "doc_embeddings1.npy")
-    doc_embeddings_path_2 = os.path.join(DATA_DIR, "svd_scipy", "doc_embeddings2.npy")
-    term_embeddings_path = os.path.join(DATA_DIR, "svd_scipy", "term_embeddings.npy")
-    doc_ids_path = os.path.join(DATA_DIR, "svd_scipy", "doc_ids.txt")
-    singular_values_path = os.path.join(DATA_DIR, "svd_scipy", "singular_values.npy")
+    global DOC_MAP, REVERSE_DOC_MAP, WORD_MAP, WORD_ID_TO_TERM, DOC_EMBEDDINGS, TERM_EMBEDDINGS, DOC_IDS_SVD, DOC_IDS_SVD_REVERSE, SINGULAR_VALUES
+    doc_path = os.path.join(DATA_DIR, "doc_map3.json")
+    word_path = os.path.join(DATA_DIR, "word_map3.json")
+    doc_embeddings_path_1 = os.path.join(DATA_DIR, "svd_scipy4", "doc_embeddings1.npy")
+    doc_embeddings_path_2 = os.path.join(DATA_DIR, "svd_scipy4", "doc_embeddings2.npy")
+    term_embeddings_path = os.path.join(DATA_DIR, "svd_scipy4", "term_embeddings.npy")
+    doc_ids_path = os.path.join(DATA_DIR, "svd_scipy4", "doc_ids.txt")
+    singular_values_path = os.path.join(DATA_DIR, "svd_scipy4", "singular_values.npy")
 
     try:
         with open(doc_path, "r") as f:
@@ -194,6 +202,7 @@ def load_data():
         for line in f:
             i, name = line.strip().split("\t", 1)
             DOC_IDS_SVD[int(i)] = name
+            DOC_IDS_SVD_REVERSE[name] = int(i)
 
 def get_svd_graph_data(terms_per_theme=8):
     """
@@ -245,7 +254,7 @@ def get_svd_graph_data(terms_per_theme=8):
 
     return {"nodes": list(nodes.values()), "edges": edges, "themes": unique_themes}
 
-def generate_rabbit_hole(start_article, additional_keywords, postings_model, path_length=5, diversity_lambda=0.5, num_branches=3, branch_seeds=None):
+def generate_rabbit_hole(start_article, additional_keywords, postings_model, path_length=5, diversity_lambda=0.5, num_branches=3, branch_seeds=None, randomize=True):
     """
     Returns list of articles to discover
     """
@@ -273,10 +282,11 @@ def generate_rabbit_hole(start_article, additional_keywords, postings_model, pat
                 decoded = decode_postings(record.postings)
 
                 for doc_id, score in decoded:
+                    score /= 10000
                     doc_scores[doc_id] += score
                     doc_vectors[doc_id][token] = score
     logger.info("Processed tokens")
-            
+    print("Processed tokens")
     if not doc_scores:
         return []
     
@@ -289,7 +299,7 @@ def generate_rabbit_hole(start_article, additional_keywords, postings_model, pat
             if term in token_to_idx:
                 vec[token_to_idx[term]] = score
         np_vectors[doc_id] = vec
-
+    print("Did MMR")
     # 2.2: Do MMR
     candidates = list(doc_scores.keys())
     pathway = []
@@ -315,6 +325,7 @@ def generate_rabbit_hole(start_article, additional_keywords, postings_model, pat
             if mmr_score > best_mmr_score:
                 best_mmr_score = mmr_score
                 best_doc = doc
+        # print(f"retrieved candidates {_}")
             
         if best_doc is not None:
             pathway.append(best_doc)
@@ -326,7 +337,8 @@ def generate_rabbit_hole(start_article, additional_keywords, postings_model, pat
 
     description = "A unique thematic cluster."
 
-    np.random.shuffle(pathway)
+    if randomize:
+        np.random.shuffle(pathway)
 
     for i in range(0, path_length*num_branches, path_length):
         nodes = pathway[i:i+path_length]
@@ -377,10 +389,8 @@ def top_query_dimensions(q_emb, top_k=5):
 
     return [(i, q_emb[i]) for i in idx]
 
-def generate_rabbit_hole_svd(start_article, path_length=5, num_branches=3):
-    global TERM_EMBEDDINGS, DOC_EMBEDDINGS, DOC_IDS_SVD, SINGULAR_VALUES
-
-    tokens = stem_tokenizer(start_article)
+def gen_query_vec(query):
+    tokens = stem_tokenizer(query)
     unique_tokens = list(set(tokens))
 
     num_terms = TERM_EMBEDDINGS.shape[0]
@@ -391,6 +401,12 @@ def generate_rabbit_hole_svd(start_article, path_length=5, num_branches=3):
         if w in WORD_MAP:
             vec[WORD_MAP[w]] += 1.0
 
+    return vec
+
+def generate_rabbit_hole_svd(start_article, path_length=5, num_branches=3):
+    global TERM_EMBEDDINGS, DOC_EMBEDDINGS, DOC_IDS_SVD, SINGULAR_VALUES
+
+    vec = gen_query_vec(start_article)
 
     q_emb = vec @ TERM_EMBEDDINGS
 
@@ -433,7 +449,50 @@ def generate_rabbit_hole_svd(start_article, path_length=5, num_branches=3):
 
     return branch_nodes
 
+def minmax(x):
+    return (x - x.min()) / (x.max() - x.min() + 1e-8)
+
+def generate_rabbit_hole_combined(start_article, additional_keywords, postings_model,  path_length=5, num_branches=3):
+    global TERM_EMBEDDINGS, DOC_EMBEDDINGS, DOC_IDS_SVD, SINGULAR_VALUES
+
+    vec = gen_query_vec(start_article) @ TERM_EMBEDDINGS
+
+    vec /= np.linalg.norm(vec) + 1e-8
+    print("beginning generating rabbit hole")
+    doc_cos_results = generate_rabbit_hole(
+        start_article, additional_keywords, postings_model,
+        path_length=35, num_branches=num_branches, randomize=False)[0]
 
 
+    doc_idxs = []
+
+    for doc in doc_cos_results:
+        svd_id = DOC_IDS_SVD_REVERSE[doc['title']]
+        doc_idxs.append(svd_id)
+
+    doc_vecs = DOC_EMBEDDINGS[doc_idxs]
+
+    svd_scores = doc_vecs @ vec.T
+    cos_scores = np.array([doc['score'] for doc in doc_cos_results])
+
+    cos_scores = minmax(cos_scores)
+    svd_scores = minmax(svd_scores)
+
+    final_scores = 0.5 * cos_scores + 0.5 * svd_scores
+
+    for i in range(len(doc_cos_results)):
+        doc_cos_results[i]["score"] = round(float(final_scores[i]), 4)
+
+    doc_cos_results.sort(key=lambda x: x["score"], reverse=True)
+
+    final_results = doc_cos_results[:path_length*2]
+
+    random.shuffle(final_results)
+
+    for result in final_results[:path_length]:
+        result["dimensions"] = ["x", "y"]
+        result["dimensionScores"] = [1.0, 1.0]
+        print(result)
 
 
+    return [final_results[:path_length]]
