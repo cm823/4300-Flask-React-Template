@@ -540,6 +540,46 @@ body {
   z-index: 5;
 }
 
+/* ── RAG context panel (modified query + summary) ──────────────────────────── */
+.rag-context {
+  position: relative;
+  z-index: 5;
+  max-width: 720px;
+  margin: 6rem auto 0;
+  padding: 1.4rem 2rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(147, 197, 253, 0.12);
+  border-radius: 14px;
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.rag-modified-query {
+  font-family: "Lato", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(147, 197, 253, 0.6);
+  margin: 0;
+}
+
+.rag-label {
+  color: rgba(147, 197, 253, 0.35);
+  margin-right: 0.4em;
+}
+
+.rag-summary {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 1.05rem;
+  font-style: italic;
+  line-height: 1.65;
+  color: rgba(210, 225, 255, 0.75);
+  margin: 0;
+}
+
 /* Branch grid */
 .branch-section {
   position: relative;
@@ -716,73 +756,4 @@ body {
 ::selection {
   background: rgba(165, 180, 252, 0.3);
   color: var(--text-primary);
-}
-
-/* ── Branch Radar Chart (SVD tab) ──────────────────────────────────────────── */
-.branch-radar-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0.6rem 0.5rem 0.4rem;
-  position: relative;
-  z-index: 5;
-}
-
-.branch-radar-title {
-  font-family: "Lato", sans-serif;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(147, 197, 253, 0.4);
-  margin: 0 0 0.35rem;
-}
-
-.branch-radar-svg {
-  width: 100%;
-  max-width: 190px;
-  height: auto;
-  overflow: visible;
-}
-
-/* ── Per-document Node Radar ───────────────────────────────────────────────── */
-.node-radar-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.8rem 0.5rem 1rem;
-  position: relative;
-  z-index: 5;
-}
-
-.node-radar-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0.6rem 0.5rem 0.3rem;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(147, 197, 253, 0.08);
-  border-radius: 10px;
-}
-
-.node-radar-title {
-  font-family: "Lato", sans-serif;
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: rgba(147, 197, 253, 0.5);
-  margin: 0 0 0.3rem;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
-
-.node-radar-svg {
-  width: 100%;
-  max-width: 170px;
-  height: auto;
-  overflow: visible;
 }
