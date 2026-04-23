@@ -1,4 +1,8 @@
+*.db
 data/*.db
+
+# JSON files
+*.json
 
 env/
 .DS_Store
