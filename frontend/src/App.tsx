@@ -836,7 +836,7 @@ export default function App(): JSX.Element {
             <AlgoToggle value={scoringMode} onChange={setScoringMode} />
             <div className="slider-row">
               <label htmlFor="num-articles-slider" className="slider-label">
-                Articles per tunnel: <strong>{numArticles}</strong>
+                Max articles per tunnel: <strong>{numArticles}</strong>
               </label>
               <input
                 id="num-articles-slider"
