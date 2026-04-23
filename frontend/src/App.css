@@ -185,6 +185,7 @@ body {
 
 /* Search form */
 .search-form {
+<<<<<<< HEAD
 @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Lato:wght@300;400;700&display=swap");
 
 :root {
@@ -372,6 +373,8 @@ body {
 
 /* Search form */
 .search-form {
+=======
+>>>>>>> 52193f6f4ed69f36c8e0a6019e8e98eefeb00d5e
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
@@ -502,6 +505,7 @@ body {
 
 /* Articles slider */
 .slider-row {
+<<<<<<< HEAD
   gap: 0.85rem;
 }
 
@@ -630,6 +634,8 @@ body {
 
 /* Articles slider */
 .slider-row {
+=======
+>>>>>>> 52193f6f4ed69f36c8e0a6019e8e98eefeb00d5e
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -661,6 +667,7 @@ body {
 .dig-dots {
   display: inline-flex;
   gap: 5px;
+<<<<<<< HEAD
   gap: 0.35rem;
   width: 100%;
 }
@@ -690,6 +697,8 @@ body {
 .dig-dots {
   display: inline-flex;
   gap: 5px;
+=======
+>>>>>>> 52193f6f4ed69f36c8e0a6019e8e98eefeb00d5e
   align-items: center;
 }
 .dig-dots span {
@@ -756,6 +765,7 @@ body {
 .root-svg {
   position: fixed;
   inset: 0;
+<<<<<<< HEAD
 }
 .dig-dots span {
   width: 6px;
@@ -821,6 +831,8 @@ body {
 .root-svg {
   position: fixed;
   inset: 0;
+=======
+>>>>>>> 52193f6f4ed69f36c8e0a6019e8e98eefeb00d5e
   width: 100%;
   height: 100%;
   pointer-events: none;
@@ -851,6 +863,7 @@ body {
     transparent
   );
   z-index: 5;
+<<<<<<< HEAD
   height: 100%;
   pointer-events: none;
   z-index: 1;
@@ -889,6 +902,10 @@ body {
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
+=======
+}
+
+>>>>>>> 52193f6f4ed69f36c8e0a6019e8e98eefeb00d5e
 /* Back to surface button */
 .ug-nav-btns {
   position: fixed;
@@ -908,6 +925,7 @@ body {
   padding: 0.5rem 1.4rem;
   font-family: "Lato", sans-serif;
   font-size: 0.8rem;
+<<<<<<< HEAD
   gap: 0.6rem;
   align-items: center;
 }
@@ -919,6 +937,8 @@ body {
   padding: 0.5rem 1.4rem;
   font-family: "Lato", sans-serif;
   font-size: 0.8rem;
+=======
+>>>>>>> 52193f6f4ed69f36c8e0a6019e8e98eefeb00d5e
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -931,6 +951,7 @@ body {
 .surface-btn:hover {
   background: rgba(20, 12, 45, 0.85);
   box-shadow: 0 0 20px rgba(147, 197, 253, 0.2);
+<<<<<<< HEAD
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--accent-blue);
@@ -995,6 +1016,10 @@ body {
 }
 
 .ug-empty {
+=======
+}
+
+>>>>>>> 52193f6f4ed69f36c8e0a6019e8e98eefeb00d5e
 /* Underground loading spinner */
 .ug-loading {
   display: flex;
@@ -1058,6 +1083,7 @@ body {
   z-index: 5;
 }
 
+<<<<<<< HEAD
 /* ── RAG context panel (modified query + summary) ──────────────────────────── */
 .rag-context {
   position: relative;
@@ -1098,6 +1124,8 @@ body {
   margin: 0;
 }
 
+=======
+>>>>>>> 52193f6f4ed69f36c8e0a6019e8e98eefeb00d5e
 /* Branch grid */
 .branch-section {
   position: relative;
@@ -1151,6 +1179,7 @@ body {
 
 .branch-label {
   text-align: center;
+<<<<<<< HEAD
 .tunnel-canvas {
   width: 100%;
   height: 180px;
@@ -1179,6 +1208,9 @@ body {
 }
 
 .cards-stack {
+=======
+  width: 100%;
+>>>>>>> 52193f6f4ed69f36c8e0a6019e8e98eefeb00d5e
   display: block;
 }
 
@@ -1215,6 +1247,7 @@ body {
   transition: background 0.2s;
   animation: fadeSlide 0.4s ease both;
   cursor: none;
+<<<<<<< HEAD
   gap: 0;
 }
 
@@ -1258,6 +1291,10 @@ body {
   transition:
     opacity 0.2s,
     background 0.2s;
+=======
+}
+
+>>>>>>> 52193f6f4ed69f36c8e0a6019e8e98eefeb00d5e
 @keyframes fadeSlide {
   from {
     opacity: 0;
@@ -1343,3 +1380,75 @@ body {
   background: rgba(165, 180, 252, 0.3);
   color: var(--text-primary);
 }
+<<<<<<< HEAD
+=======
+
+/* ── Branch Radar Chart (SVD tab) ──────────────────────────────────────────── */
+.branch-radar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.6rem 0.5rem 0.4rem;
+  position: relative;
+  z-index: 5;
+}
+
+.branch-radar-title {
+  font-family: "Lato", sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(147, 197, 253, 0.4);
+  margin: 0 0 0.35rem;
+}
+
+.branch-radar-svg {
+  width: 100%;
+  max-width: 190px;
+  height: auto;
+  overflow: visible;
+}
+
+/* ── Per-document Node Radar ───────────────────────────────────────────────── */
+.node-radar-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.8rem 0.5rem 1rem;
+  position: relative;
+  z-index: 5;
+}
+
+.node-radar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.6rem 0.5rem 0.3rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(147, 197, 253, 0.08);
+  border-radius: 10px;
+}
+
+.node-radar-title {
+  font-family: "Lato", sans-serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(147, 197, 253, 0.5);
+  margin: 0 0 0.3rem;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.node-radar-svg {
+  width: 100%;
+  max-width: 170px;
+  height: auto;
+  overflow: visible;
+}
+>>>>>>> 52193f6f4ed69f36c8e0a6019e8e98eefeb00d5e

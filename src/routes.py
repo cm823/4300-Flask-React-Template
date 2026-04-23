@@ -62,6 +62,7 @@ def register_routes(app):
 
     if USE_LLM:
 <<<<<<< HEAD
+<<<<<<< HEAD
         from llm_routes import register_chat_route, register_rag_route
 
         def run_pipeline(query, scoring_mode, path_length):
@@ -85,6 +86,10 @@ def register_routes(app):
 
         register_chat_route(app, lambda q: [])
         register_rag_route(app, run_pipeline)
+=======
+        from llm_routes import register_chat_route
+        register_chat_route(app, lambda q: [])
+>>>>>>> 52193f6f4ed69f36c8e0a6019e8e98eefeb00d5e
 =======
         from llm_routes import register_chat_route
         register_chat_route(app, lambda q: [])
