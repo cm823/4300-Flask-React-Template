@@ -464,11 +464,57 @@ def generate_rabbit_hole_combined(start_article, additional_keywords, postings_m
     vec = gen_query_vec(start_article) @ TERM_EMBEDDINGS
 
     vec /= np.linalg.norm(vec) + 1e-8
-    print("beginning generating rabbit hole")
-    doc_cos_results = generate_rabbit_hole(
-        start_article, additional_keywords, postings_model,
-        path_length=35, num_branches=num_branches, randomize=False)[0]
+    # print("beginning generating rabbit hole")
+    # doc_cos_results = generate_rabbit_hole(
+    #     start_article, additional_keywords, postings_model,
+    #     path_length=35, num_branches=num_branches, randomize=False)[0]
 
+    tokens = stem_tokenizer(start_article)
+    unique_tokens = list(set(tokens))
+
+
+    doc_scores = defaultdict(float)
+
+
+    for token in unique_tokens:
+        print(token)
+        term_id = WORD_MAP.get(token)
+        if term_id is not None:
+            record = postings_model.query.filter_by(term_id=term_id).first()
+            if record and record.postings:
+                logger.info("Found records")
+                decoded = decode_postings(record.postings)
+
+                for doc_id, score in decoded:
+                    score /= 10000
+                    doc_scores[doc_id] += score
+    print("done processing tokens")
+    print(len(doc_scores))
+    sorted_scores = sorted(doc_scores.items(), key=lambda x: x[1], reverse=True)[:100 + 20 * (5-path_length)]
+    print(len(sorted_scores))
+
+    doc_cos_results = []
+
+    description = "A unique thematic cluster."
+
+    for doc_id, score in sorted_scores:
+        if doc_id not in REVERSE_DOC_MAP:
+            continue
+        title = REVERSE_DOC_MAP.get(doc_id, f"Unknown ID {doc_id}")
+        text = Articles.query.filter_by(article_name=title).first().article_text
+        if title.startswith("Unknown ID"):
+            continue
+        doc_cos_results.append({
+            "id" : doc_id,
+            "title" : title,
+            "score" : round(float(score), 4),
+            "branch" : 0,
+            "description": description,
+            "text": text
+        })
+    print("done jsonifying")
+
+    doc_cos_results.sort(key=lambda x: x["score"], reverse=True)
 
     doc_idxs = []
 
@@ -483,6 +529,8 @@ def generate_rabbit_hole_combined(start_article, additional_keywords, postings_m
 
     cos_scores = minmax(cos_scores)
     svd_scores = minmax(svd_scores)
+
+    print("done svding")
 
     final_scores = 0.5 * cos_scores + 0.5 * svd_scores
 
