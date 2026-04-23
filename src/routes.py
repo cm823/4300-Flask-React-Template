@@ -61,5 +61,26 @@ def register_routes(app):
         return jsonify(branches)
 
     if USE_LLM:
-        from llm_routes import register_chat_route
+        from llm_routes import register_chat_route, register_rag_route
+
+        def run_pipeline(query, scoring_mode, path_length):
+            if scoring_mode not in ('tfidf', 'svd', 'combined'):
+                scoring_mode = 'tfidf'
+            if scoring_mode == 'tfidf':
+                return generate_rabbit_hole(
+                    start_article=query,
+                    additional_keywords='',
+                    postings_model=Postings,
+                    path_length=path_length,
+                    diversity_lambda=1,
+                    num_branches=1,
+                )
+            elif scoring_mode == 'svd':
+                return generate_rabbit_hole_svd(query, path_length=path_length, num_branches=1)
+            else:
+                return generate_rabbit_hole_combined(
+                    query, '', postings_model=Postings, path_length=path_length, num_branches=1,
+                )
+
         register_chat_route(app, lambda q: [])
+        register_rag_route(app, run_pipeline)

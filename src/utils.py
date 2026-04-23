@@ -499,7 +499,7 @@ def generate_rabbit_hole_combined(start_article, additional_keywords, postings_m
                     doc_scores[doc_id] += score
     print("done processing tokens")
     print(len(doc_scores))
-    sorted_scores = sorted(doc_scores.items(), key=lambda x: x[1], reverse=True)[:100 + 20 * (path_length-5)]
+    sorted_scores = sorted(doc_scores.items(), key=lambda x: x[1], reverse=True)[:100 + 20 * (5-path_length)]
     print(len(sorted_scores))
 
     doc_cos_results = []
