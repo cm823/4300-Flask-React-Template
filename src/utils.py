@@ -11,6 +11,10 @@ import logging
 import random
 vecdot = np.vdot
 
+non_people_articles = {
+    "Alligatoridae"
+}
+
 stemmer = PorterStemmer()
 stemmed_stopwords = set(list({stemmer.stem(w) for w in ENGLISH_STOP_WORDS}) \
                      + ['anywh', 'becau', 'el', 'elsewh', 'everywh', 'ind', 'otherwi', 'plea', 'somewh'])
@@ -342,7 +346,7 @@ def generate_rabbit_hole(start_article, additional_keywords, postings_model, pat
         np.random.shuffle(pathway)
 
     for i in range(0, path_length*num_branches, path_length):
-        nodes = pathway[i:i+path_length]
+        nodes = pathway
         temp = []
         for doc_id in nodes:
             if doc_id not in REVERSE_DOC_MAP:
@@ -352,7 +356,7 @@ def generate_rabbit_hole(start_article, additional_keywords, postings_model, pat
                 text = Articles.query.filter_by(article_name=title).first().article_text
             except Exception as e:
                 text = ""
-            if title.startswith("Unknown ID"):
+            if title.startswith("Unknown ID") or title in non_people_articles:
                 continue
             temp.append({
                 "id": doc_id,
@@ -362,6 +366,7 @@ def generate_rabbit_hole(start_article, additional_keywords, postings_model, pat
                 "description": description,
                 "text" : text
             })
+
         if temp:
             branch_nodes.append(temp)
 
@@ -429,7 +434,7 @@ def generate_rabbit_hole_svd(start_article, path_length=5, num_branches=3):
     description = "A unique thematic cluster."
 
     for i in range(0, path_length * num_branches, path_length):
-        nodes = top_idx[i:i+path_length]
+        nodes = top_idx
         temp = []
         top_q_dims = top_query_dimensions(q_emb, top_k=6)
         dim_names = []
@@ -462,6 +467,8 @@ def generate_rabbit_hole_svd(start_article, path_length=5, num_branches=3):
             for dim, score in top_q_dims:
                 dim_names.append(dimension_themes[dim])
                 dim_scores.append(float(dims[dim][1]))
+            if title in non_people_articles:
+                continue
             temp.append(
                 {
                     "id": int(node),
@@ -474,6 +481,8 @@ def generate_rabbit_hole_svd(start_article, path_length=5, num_branches=3):
                     "text" : text
                 }
             )
+            if len(temp) >= path_length:
+                break
         branch_nodes.append(temp)
 
     return branch_nodes
@@ -535,6 +544,8 @@ def generate_rabbit_hole_combined(start_article, additional_keywords, postings_m
             text = ""
         if title.startswith("Unknown ID"):
             continue
+        if title in non_people_articles:
+            continue
         doc_cos_results.append({
             "id" : doc_id,
             "title" : title,
@@ -564,7 +575,7 @@ def generate_rabbit_hole_combined(start_article, additional_keywords, postings_m
 
     print("done svding")
 
-    final_scores = 0.5 * cos_scores + 0.5 * svd_scores
+    final_scores = 0.8 * cos_scores + 0.2 * svd_scores
 
     for i in range(len(doc_cos_results)):
         doc_cos_results[i]["score"] = round(float(final_scores[i]), 4)
