@@ -36,7 +36,7 @@ def register_routes(app):
         if not start_article and not keywords:
             return jsonify([])
 
-        if scoring_mode not in ('tfidf', 'svd'):
+        if scoring_mode not in ('tfidf', 'svd', 'combined'):
             scoring_mode = 'tfidf'
 
         if scoring_mode == 'tfidf':
@@ -48,15 +48,16 @@ def register_routes(app):
                 diversity_lambda=1,
                 num_branches=1,
             )
-        else:
+        elif scoring_mode == 'svd':
             branches = generate_rabbit_hole_svd(start_article, path_length=path_length, num_branches=1)
-            # branches = generate_rabbit_hole_combined(
-            #     start_article,
-            #     keywords,
-            #     postings_model=Postings,
-            #     path_length=path_length,
-            #     num_branches=1,
-            # )
+        else:
+            branches = generate_rabbit_hole_combined(
+                start_article,
+                keywords,
+                postings_model=Postings,
+                path_length=path_length,
+                num_branches=1,
+            )
         return jsonify(branches)
 
     if USE_LLM:

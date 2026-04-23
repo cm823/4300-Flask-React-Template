@@ -7,6 +7,7 @@ from sklearn.externals.array_api_compat.dask.array import vecdot
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 from nltk.stem import PorterStemmer
 from collections import defaultdict
+from models import Articles
 import logging
 import random
 
@@ -347,6 +348,7 @@ def generate_rabbit_hole(start_article, additional_keywords, postings_model, pat
             if doc_id not in REVERSE_DOC_MAP:
                 continue
             title = REVERSE_DOC_MAP.get(doc_id, f"Unknown ID {doc_id}")
+            text = Articles.query.filter_by(article_name=title).first().article_text
             if title.startswith("Unknown ID"):
                 continue
             temp.append({
@@ -354,7 +356,8 @@ def generate_rabbit_hole(start_article, additional_keywords, postings_model, pat
                 "title": title,
                 "score": round(doc_scores[doc_id], 4),
                 "branch": int(i/path_length) + 1,
-                "description": description
+                "description": description,
+                "text" : text
             })
         if temp:
             branch_nodes.append(temp)
@@ -430,6 +433,8 @@ def generate_rabbit_hole_svd(start_article, path_length=5, num_branches=3):
             dims = top_query_dimensions(doc_vec @ TERM_EMBEDDINGS)
             dim_names = []
             dim_scores = []
+            title = DOC_IDS_SVD[node]
+            text = Articles.query.filter_by(article_name=title).first().article_text
             for dim, score in dims:
                 if dimension_themes[dim] not in dim_names:
                     dim_names.append(dimension_themes[dim])
@@ -437,12 +442,13 @@ def generate_rabbit_hole_svd(start_article, path_length=5, num_branches=3):
             temp.append(
                 {
                     "id": int(node),
-                    "title": DOC_IDS_SVD[node],
+                    "title": title,
                     "score": round(float(scores[node]), 4),
                     "branch": int(i/path_length)+1,
                     "description": description,
                     "dimensions": dim_names,
-                    "dimensionScores": dim_scores
+                    "dimensionScores" : dim_scores,
+                    "text" : text
                 }
             )
         branch_nodes.append(temp)
@@ -496,3 +502,6 @@ def generate_rabbit_hole_combined(start_article, additional_keywords, postings_m
 
 
     return [final_results[:path_length]]
+
+
+
