@@ -7,7 +7,7 @@ from utils import generate_rabbit_hole_combined
 from utils import generate_rabbit_hole_svd
 from utils import generate_rabbit_hole, load_data, get_svd_graph_data
 
-USE_LLM = False
+USE_LLM = True
 
 load_data()
 
