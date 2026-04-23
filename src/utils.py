@@ -348,7 +348,10 @@ def generate_rabbit_hole(start_article, additional_keywords, postings_model, pat
             if doc_id not in REVERSE_DOC_MAP:
                 continue
             title = REVERSE_DOC_MAP.get(doc_id, f"Unknown ID {doc_id}")
-            text = Articles.query.filter_by(article_name=title).first().article_text
+            try:
+                text = Articles.query.filter_by(article_name=title).first().article_text
+            except Exception as e:
+                text = ""
             if title.startswith("Unknown ID"):
                 continue
             temp.append({
@@ -434,7 +437,10 @@ def generate_rabbit_hole_svd(start_article, path_length=5, num_branches=3):
             dim_names = []
             dim_scores = []
             title = DOC_IDS_SVD[node]
-            text = Articles.query.filter_by(article_name=title).first().article_text
+            try:
+                text = Articles.query.filter_by(article_name=title).first().article_text
+            except Exception as e:
+                text = ""
             for dim, score in dims:
                 if dimension_themes[dim] not in dim_names:
                     dim_names.append(dimension_themes[dim])
@@ -456,6 +462,9 @@ def generate_rabbit_hole_svd(start_article, path_length=5, num_branches=3):
     return branch_nodes
 
 def minmax(x):
+    if len(x) == 0:
+        return x  # or np.array([])
+
     return (x - x.min()) / (x.max() - x.min() + 1e-8)
 
 def generate_rabbit_hole_combined(start_article, additional_keywords, postings_model,  path_length=5, num_branches=3):
@@ -490,7 +499,7 @@ def generate_rabbit_hole_combined(start_article, additional_keywords, postings_m
                     doc_scores[doc_id] += score
     print("done processing tokens")
     print(len(doc_scores))
-    sorted_scores = sorted(doc_scores.items(), key=lambda x: x[1], reverse=True)[:100 + 20 * (5-path_length)]
+    sorted_scores = sorted(doc_scores.items(), key=lambda x: x[1], reverse=True)[:100 + 20 * (path_length-5)]
     print(len(sorted_scores))
 
     doc_cos_results = []
@@ -501,7 +510,10 @@ def generate_rabbit_hole_combined(start_article, additional_keywords, postings_m
         if doc_id not in REVERSE_DOC_MAP:
             continue
         title = REVERSE_DOC_MAP.get(doc_id, f"Unknown ID {doc_id}")
-        text = Articles.query.filter_by(article_name=title).first().article_text
+        try:
+            text = Articles.query.filter_by(article_name=title).first().article_text
+        except Exception as e:
+            text = ""
         if title.startswith("Unknown ID"):
             continue
         doc_cos_results.append({
