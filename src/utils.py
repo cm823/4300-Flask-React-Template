@@ -348,7 +348,7 @@ def generate_rabbit_hole(start_article, additional_keywords, postings_model, pat
             if doc_id not in REVERSE_DOC_MAP:
                 continue
             title = REVERSE_DOC_MAP.get(doc_id, f"Unknown ID {doc_id}")
-            text = Articles.query.filter_by(article_name=title).first()
+            text = Articles.query.filter_by(article_name=title).first().article_text
             if title.startswith("Unknown ID"):
                 continue
             temp.append({
@@ -434,7 +434,7 @@ def generate_rabbit_hole_svd(start_article, path_length=5, num_branches=3):
             dim_names = []
             dim_scores = []
             title = DOC_IDS_SVD[node]
-            text = Articles.query.filter_by(article_name=title).first()
+            text = Articles.query.filter_by(article_name=title).first().article_text
             for dim, score in dims:
                 if dimension_themes[dim] not in dim_names:
                     dim_names.append(dimension_themes[dim])
@@ -504,44 +504,44 @@ def generate_rabbit_hole_combined(start_article, additional_keywords, postings_m
     return [final_results[:path_length]]
 
 
-# def generate_rabbit_hole_2(start_article, postings_model, categories_model, path_length=5, alpha=0.67):
-#     tokens = stem_tokenizer(start_article)
-#     unique_tokens = list(set(tokens))
-#
-#     token_to_idx = {token: i for i, token in enumerate(unique_tokens)}
-#     vocab_size = len(unique_tokens)
-#
-#     postings_scores = defaultdict(float)
-#     postings_token_counts = defaultdict(int)
-#
-#     categories_scores = defaultdict(float)
-#     categories_token_counts = defaultdict(int)
-#
-#     for token in unique_tokens:
-#         term_id_posting = WORD_MAP_POSTINGS.get(token)
-#         if term_id_posting:
-#             record = postings_model.query.filter_by(term_id=term_id_posting).first()
-#             if record and record.postings:
-#                 logger.info("Found records")
-#                 decoded = decode_postings(record.postings)
-#
-#                 for doc_id, score in decoded:
-#                     postings_scores[doc_id] += score
-#                     postings_token_counts[doc_id] += 1
-#
-#     sorted_ids = sorted(postings_scores.items(), key=lambda x: x[1], reverse=True)
-#
-#     res = []
-#     print(sorted_ids[:100])
-#     i = 0
-#     while len(res) < path_length:
-#         title, score = sorted_ids[i]
-#         doc_id = DOC_MAP_POSTINGS.get(title, f"Unknown Article {title}")
-#         if not title.startswith("Unknown ID"):
-#             res.append({
-#                 "id": doc_id,        # already IS the wiki ID
-#                 "title": title,
-#                 "score": round(score, 2)
-#             })
-#         i += 1
-#     return res
+def generate_rabbit_hole_2(start_article, postings_model, categories_model, path_length=5, alpha=0.67):
+    tokens = stem_tokenizer(start_article)
+    unique_tokens = list(set(tokens))
+
+    token_to_idx = {token: i for i, token in enumerate(unique_tokens)}
+    vocab_size = len(unique_tokens)
+
+    postings_scores = defaultdict(float)
+    postings_token_counts = defaultdict(int)
+
+    categories_scores = defaultdict(float)
+    categories_token_counts = defaultdict(int)
+
+    for token in unique_tokens:
+        term_id_posting = WORD_MAP_POSTINGS.get(token)
+        if term_id_posting:
+            record = postings_model.query.filter_by(term_id=term_id_posting).first()
+            if record and record.postings:
+                logger.info("Found records")
+                decoded = decode_postings(record.postings)
+
+                for doc_id, score in decoded:
+                    postings_scores[doc_id] += score
+                    postings_token_counts[doc_id] += 1
+
+    sorted_ids = sorted(postings_scores.items(), key=lambda x: x[1], reverse=True)
+
+    res = []
+    print(sorted_ids[:100])
+    i = 0
+    while len(res) < path_length:
+        title, score = sorted_ids[i]
+        doc_id = DOC_MAP_POSTINGS.get(title, f"Unknown Article {title}")
+        if not title.startswith("Unknown ID"):
+            res.append({
+                "id": doc_id,        # already IS the wiki ID
+                "title": title,
+                "score": round(score, 2)
+            })
+        i += 1
+    return res
