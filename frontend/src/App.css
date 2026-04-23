@@ -757,3 +757,405 @@ body {
   background: rgba(165, 180, 252, 0.3);
   color: var(--text-primary);
 }
+
+/* ── Branch Radar Chart (SVD tab) ──────────────────────────────────────────── */
+.branch-radar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.6rem 0.5rem 0.4rem;
+  position: relative;
+  z-index: 5;
+}
+
+.branch-radar-title {
+  font-family: "Lato", sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(147, 197, 253, 0.4);
+  margin: 0 0 0.35rem;
+}
+
+.branch-radar-svg {
+  width: 100%;
+  max-width: 190px;
+  height: auto;
+  overflow: visible;
+}
+
+/* ── Per-document Node Radar ───────────────────────────────────────────────── */
+.node-radar-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.8rem 0.5rem 1rem;
+  position: relative;
+  z-index: 5;
+}
+
+.node-radar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.6rem 0.5rem 0.3rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(147, 197, 253, 0.08);
+  border-radius: 10px;
+}
+
+.node-radar-title {
+  font-family: "Lato", sans-serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(147, 197, 253, 0.5);
+  margin: 0 0 0.3rem;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.node-radar-svg {
+  width: 100%;
+  max-width: 170px;
+  height: auto;
+  overflow: visible;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PASTE THIS ENTIRE BLOCK INTO App.css
+   (append to the bottom, or merge with existing rules)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Journey wrapper ──────────────────────────────────────────────────── */
+.journey-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 0;
+}
+
+/* ── Tunnel (sticky / always visible) ────────────────────────────────── */
+.journey-tunnel-wrap {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  pointer-events: none;
+}
+
+.journey-tunnel {
+  width: 100%;
+  height: 260px;
+  border-radius: 0 0 32px 32px;
+  overflow: hidden;
+  background: transparent;
+}
+
+.tunnel-overlay-text {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Lato', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: rgba(147, 197, 253, 0.5);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ── Scroll container ─────────────────────────────────────────────────── */
+.journey-scroll {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 0 80px;
+}
+
+/* ── Individual journey segment ───────────────────────────────────────── */
+.journey-segment {
+  position: relative;
+}
+
+/* ── Article panel (full viewport height, centered content) ───────────── */
+.article-panel {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 60px 24px;
+}
+
+.article-panel-inner {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 20px;
+  max-width: 560px;
+  background: rgba(10, 8, 26, 0.55);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(147, 197, 253, 0.12);
+  border-radius: 28px;
+  padding: 48px 40px;
+  box-shadow:
+    0 0 60px rgba(99, 120, 220, 0.12),
+    0 2px 40px rgba(0, 0, 0, 0.45);
+}
+
+/* ── Score badge ──────────────────────────────────────────────────────── */
+.article-score-badge {
+  display: inline-block;
+  font-family: 'Lato', monospace;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: rgba(147, 197, 253, 0.6);
+  background: rgba(99, 120, 220, 0.12);
+  border: 1px solid rgba(147, 197, 253, 0.18);
+  border-radius: 20px;
+  padding: 4px 14px;
+}
+
+/* ── Article title — Anime.js Effect 15 ───────────────────────────────── */
+.ml15 {
+  font-family: 'Cinzel', 'Playfair Display', Georgia, serif;
+  font-weight: 800;
+  font-size: clamp(1.6rem, 4vw, 3rem);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #e0ecff;
+  line-height: 1.15;
+  margin: 0;
+  text-shadow: 0 0 40px rgba(147, 197, 253, 0.3);
+}
+
+.ml15 .word {
+  display: inline-block;
+  line-height: 1.15em;
+}
+
+/* ── Article description ──────────────────────────────────────────────── */
+.article-desc {
+  font-family: 'Lato', sans-serif;
+  font-size: 14px;
+  line-height: 1.7;
+  color: rgba(196, 215, 255, 0.65);
+  max-width: 420px;
+  margin: 0;
+}
+
+/* ── Wikipedia link ───────────────────────────────────────────────────── */
+.article-wiki-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Lato', sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  color: rgba(147, 197, 253, 0.8);
+  text-decoration: none;
+  border: 1px solid rgba(147, 197, 253, 0.25);
+  border-radius: 24px;
+  padding: 8px 22px;
+  transition: all 0.25s ease;
+  margin-top: 8px;
+}
+
+.article-wiki-link:hover {
+  color: #fff;
+  border-color: rgba(147, 197, 253, 0.7);
+  background: rgba(99, 120, 220, 0.18);
+  box-shadow: 0 0 20px rgba(147, 197, 253, 0.15);
+}
+
+/* ── Floating Alice-in-Wonderland images ──────────────────────────────── */
+.floating-imgs-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.floating-img {
+  position: absolute;
+  object-fit: contain;
+  opacity: 0.55;
+  filter: drop-shadow(0 4px 18px rgba(99, 120, 220, 0.25));
+  animation: floatBob ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes floatBob {
+  0%   { transform: translateY(0px);   }
+  100% { transform: translateY(-22px); }
+}
+
+/* ── Dirt divider between articles ───────────────────────────────────── */
+.dirt-divider {
+  position: relative;
+  width: 100%;
+  height: 80px;
+  background: linear-gradient(
+    180deg,
+    rgba(42, 28, 12, 0.0)  0%,
+    rgba(55, 35, 15, 0.88) 38%,
+    rgba(55, 35, 15, 0.88) 62%,
+    rgba(42, 28, 12, 0.0)  100%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.divider-roots {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.divider-stones {
+  position: absolute;
+  inset: 0;
+}
+
+.div-stone {
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 5px;
+  background: rgba(120, 90, 55, 0.55);
+  border-radius: 50%;
+  transform: translateY(-50%);
+}
+
+.divider-label {
+  position: relative;
+  z-index: 2;
+  font-family: 'Lato', sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(180, 140, 90, 0.5);
+  margin: 0;
+}
+
+/* ── Ground rumble on divider ─────────────────────────────────────────── */
+@keyframes dividerRumble {
+  0%   { transform: translateX(0)   translateY(0);  }
+  12%  { transform: translateX(-7px) translateY(4px); }
+  25%  { transform: translateX(6px)  translateY(-5px); }
+  37%  { transform: translateX(-5px) translateY(3px); }
+  50%  { transform: translateX(7px)  translateY(-3px); }
+  62%  { transform: translateX(-4px) translateY(4px); }
+  75%  { transform: translateX(4px)  translateY(-2px); }
+  87%  { transform: translateX(-2px) translateY(1px); }
+  100% { transform: translateX(0)   translateY(0);  }
+}
+
+/* Subtle whole-screen shake */
+@keyframes screenShake {
+  0%   { transform: translate(0, 0);    }
+  20%  { transform: translate(-2px, 1px); }
+  40%  { transform: translate(2px, -1px); }
+  60%  { transform: translate(-1px, 2px); }
+  80%  { transform: translate(1px, -1px); }
+  100% { transform: translate(0, 0);    }
+}
+
+.divider-rumble {
+  animation: dividerRumble 0.55s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+body.screen-shake {
+  animation: screenShake 0.55s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* ── Journey bottom cap ───────────────────────────────────────────────── */
+.journey-bottom-cap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 60px 24px 40px;
+}
+
+.bottom-cap-text {
+  font-family: 'Lato', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  color: rgba(147, 197, 253, 0.3);
+  text-transform: uppercase;
+  margin: 0;
+}
+
+/* ── Return to surface — inline button at bottom ──────────────────────── */
+.return-surface-btn {
+  font-family: 'Lato', sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(147, 197, 253, 0.85);
+  background: rgba(20, 15, 50, 0.7);
+  border: 1px solid rgba(147, 197, 253, 0.3);
+  border-radius: 28px;
+  padding: 12px 32px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.return-surface-btn:hover {
+  color: #fff;
+  border-color: rgba(147, 197, 253, 0.7);
+  background: rgba(60, 80, 200, 0.22);
+  box-shadow: 0 0 24px rgba(147, 197, 253, 0.18);
+}
+
+/* ── Floating corner surface button (always on screen) ────────────────── */
+.floating-surface-btn {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 100;
+  font-family: 'Lato', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(147, 197, 253, 0.9);
+  background: rgba(10, 8, 30, 0.82);
+  border: 1px solid rgba(147, 197, 253, 0.28);
+  border-radius: 24px;
+  padding: 10px 22px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+  transition: all 0.22s ease;
+}
+
+.floating-surface-btn:hover {
+  color: #fff;
+  border-color: rgba(147, 197, 253, 0.7);
+  background: rgba(40, 60, 180, 0.28);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(147, 197, 253, 0.18);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   END OF PASTE BLOCK
+   ══════════════════════════════════════════════════════════════════════════ */
