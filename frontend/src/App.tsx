@@ -15,11 +15,12 @@ interface ArticleNode {
   dimensionScores?: number[];
 }
 
-type ScoringMode = "tfidf" | "svd";
+type ScoringMode = "tfidf" | "svd" | "combined";
 
 const ALGO_LABELS: Record<ScoringMode, string> = {
   tfidf: "TF-IDF + MMR",
   svd: "SVD",
+  combined: "Combined",
 };
 
 /* Sparkle Cursor */
@@ -543,7 +544,7 @@ function AlgoToggle({
 }) {
   return (
     <div className="algo-toggle">
-      {(["tfidf", "svd"] as ScoringMode[]).map((m) => (
+      {(["tfidf", "svd", "combined"] as ScoringMode[]).map((m) => (
         <button
           key={m}
           type="button"
