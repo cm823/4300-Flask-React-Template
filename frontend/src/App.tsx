@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import "./App.css";
-import { BranchScrollJourney, TunnelCanvas } from "./ArticleScrollJourney";
 import Chat from "./Chat";
 import mountain from "./assets/mountain2.png";
+import rabbitImg from "../../assets/rabbithole.png";
+// IMPORT from our new Scroll Journey component
+import { BranchScrollJourney, TunnelCanvas } from "./ArticleScrollJourney";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 interface ArticleNode {
@@ -47,6 +49,7 @@ function SparkleCursor() {
       const dy = e.clientY - lastPos.current.y;
       if (Math.hypot(dx, dy) < 6) return;
       lastPos.current = { x: e.clientX, y: e.clientY };
+
       const newSparkle: Sparkle = {
         id: nextId.current++,
         x: e.clientX,
@@ -62,6 +65,7 @@ function SparkleCursor() {
     return () => window.removeEventListener("mousemove", onMove);
   }, []);
 
+  // Fade out for sparkles
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
@@ -70,12 +74,13 @@ function SparkleCursor() {
     return () => clearInterval(interval);
   }, []);
 
+  // Pastel dark-blue palette for our beautiful sparkles yay
   const colors = [
-    "rgba(147,197,253,VAL)",
-    "rgba(165,180,252,VAL)",
-    "rgba(196,181,253,VAL)",
-    "rgba(125,211,252,VAL)",
-    "rgba(99,179,237,VAL)",
+    "rgba(147,197,253,VAL)", // sky-300
+    "rgba(165,180,252,VAL)", // indigo-300
+    "rgba(196,181,253,VAL)", // violet-300
+    "rgba(125,211,252,VAL)", // cyan-300
+    "rgba(99,179,237,VAL)", // blue-400
   ];
 
   return (
@@ -92,16 +97,14 @@ function SparkleCursor() {
           boxShadow: "0 0 12px rgba(147, 197, 253, 0.8)",
           transform: "translate(-50%, -50%)",
           pointerEvents: "none",
-          zIndex: 9999,
+          zIndex: 9999, // Ensure cursor is always on top
         }}
       />
       {sparkles.map((s, i) => {
         const age = (Date.now() - s.born) / 650;
         const alpha = s.opacity * (1 - age * 0.8);
-        const color = colors[i % colors.length].replace(
-          "VAL",
-          alpha.toFixed(2),
-        );
+        const colorTemplate = colors[i % colors.length];
+        const color = colorTemplate.replace("VAL", alpha.toFixed(2));
         const scale = 1 - age * 0.4;
         return (
           <svg
@@ -119,6 +122,7 @@ function SparkleCursor() {
             }}
             viewBox="0 0 24 24"
           >
+            {/* 4-point star */}
             <path
               d="M12 2 L13.5 10.5 L22 12 L13.5 13.5 L12 22 L10.5 13.5 L2 12 L10.5 10.5 Z"
               fill={color}
@@ -224,8 +228,12 @@ export default function App(): JSX.Element {
   const [numArticles, setNumArticles] = useState(5);
   const [underground, setUnderground] = useState(false);
 
-  // NEW STATE: Track which article we are looking at from the parent component
+  // Custom scrolling state
   const [currentArticleIndex, setCurrentArticleIndex] = useState(0);
+
+  // New RAG state from main branch
+  const [modifiedQuery, setModifiedQuery] = useState<string | null>(null);
+  const [ragSummary, setRagSummary] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/config")
@@ -237,13 +245,16 @@ export default function App(): JSX.Element {
     async (e?: React.FormEvent) => {
       if (e) e.preventDefault();
       if (!article.trim()) return;
+
       setLoading(true);
       setHasSearched(false);
       setUnderground(true);
-      setCurrentArticleIndex(0); // Reset index on new search
+      setCurrentArticleIndex(0); // Reset scroll index
       setModifiedQuery(null);
       setRagSummary(null);
+
       try {
+        // Using the new API endpoint and JSON body from main branch
         const res = await fetch("/api/rag_query", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -253,6 +264,7 @@ export default function App(): JSX.Element {
             path_length: numArticles,
           }),
         });
+
         const data = await res.json();
         if (!res.ok) {
           console.error("rag_query error:", data);
@@ -275,9 +287,9 @@ export default function App(): JSX.Element {
     setUnderground(false);
     setBranches([]);
     setHasSearched(false);
+    setCurrentArticleIndex(0);
     setModifiedQuery(null);
     setRagSummary(null);
-    setCurrentArticleIndex(0); // Reset on surface
   };
 
   if (useLlm === null) return <></>;
@@ -295,16 +307,20 @@ export default function App(): JSX.Element {
         <StarField />
 
         <div className="hero-content">
-          <p className="hero-eyebrow">Wikipedia Discovery Engine</p>
+          <p className="hero-eyebrow">
+            Wikipedia Discovery Engine for Famous People!
+          </p>
           <h1 className="hero-title">
             <span className="title-rabbit">🐇</span> Rabbit Hole
           </h1>
-          <p className="hero-sub">Enter a topic. Fall down the rabbit hole.</p>
+          <p className="hero-sub">
+            Search something about someone. Fall down the rabbit hole.
+          </p>
 
           <form className="search-form" onSubmit={handleSearch}>
             <input
               className="search-input"
-              placeholder="Enter a phrase describing a category of articles"
+              placeholder="Enter a phrase describing a category of articles (ex. 'American participants in the Winter Olympics')"
               value={article}
               onChange={(e) => setArticle(e.target.value)}
               required
@@ -343,8 +359,7 @@ export default function App(): JSX.Element {
         </div>
       </div>
 
-      {/* ── NEW: FIXED SIDEBAR RENDERED AT THE ROOT LEVEL ── */}
-      {/* Placed here as a sibling to underground-world, dodging the transform CSS entirely */}
+      {/* ── FIXED SIDEBAR RENDERED AT THE ROOT LEVEL ── */}
       {underground && branches.length > 0 && branches[0]?.length > 0 && (
         <div
           className="journey-tunnel-wrap"
@@ -352,7 +367,7 @@ export default function App(): JSX.Element {
             position: "fixed",
             top: 0,
             right: 0,
-            width: "200px",
+            width: "300px",
             height: "100vh",
             zIndex: 100, // Safe high Z-index to sit above the dirt background
             pointerEvents: "none",
@@ -368,12 +383,46 @@ export default function App(): JSX.Element {
           <div className="tunnel-bottom-fade" />
 
           <div
+            style={{
+              position: "absolute",
+              top: "50%", // Adjust this percentage to move it higher or lower in the tunnel
+              left: "55%",
+              transform: "translate(-50%, -50%)", // Perfectly centers the wrapper
+              zIndex: 200, // Keeps it above the tunnel, but safely behind the text
+            }}
+          >
+            <style>
+              {`
+                @keyframes rabbitBob {
+                  0%, 100% { transform: translateY(0); }
+                  50% { transform: translateY(-15px); }
+                }
+              `}
+            </style>
+            <img
+              src={rabbitImg}
+              alt="Flying Rabbit"
+              style={{
+                width: "120px",
+                height: "120px",
+                objectFit: "contain",
+                flexShrink: 0,
+                animation: `rabbitBob 4s ease-in-out infinite`,
+                // Use drop-shadow instead of box-shadow so it hugs the transparent PNG shape
+                filter: "drop-shadow(0 12px 16px rgba(0,0,0,0.6))",
+              }}
+            />
+          </div>
+
+          <div
             className="tunnel-overlay-text"
             style={{
               textAlign: "center",
               zIndex: 10,
               width: "100%",
-              padding: "0 20px",
+              paddingBottom: "20px",
+              paddingLeft: "20px",
+              paddingRight: "20px",
               boxSizing: "border-box",
             }}
           >
@@ -467,25 +516,32 @@ export default function App(): JSX.Element {
           </div>
         )}
 
+        {/* ── NEW RAG Context Summary ── */}
         {(modifiedQuery || ragSummary) && (
-          <div className="rag-context">
+          <div
+            className="rag-context"
+            style={{ zIndex: 1, position: "relative" }}
+          >
             {modifiedQuery && (
               <p className="rag-modified-query">
-                <span className="rag-label">Reformatted Query:</span> {modifiedQuery}
+                <span className="rag-label">Reformatted Query:</span>{" "}
+                {modifiedQuery}
               </p>
             )}
             {ragSummary && <p className="rag-summary">{ragSummary}</p>}
           </div>
         )}
 
+        {/* ── Our custom vertical scrolling journey ── */}
         {branches.length > 0 && branches[0]?.length > 0 && (
           <BranchScrollJourney
             branch={branches[0]}
             onSurface={handleSurface}
-            onArticleChange={setCurrentArticleIndex} // Pass the state setter down!
+            onArticleChange={setCurrentArticleIndex}
           />
         )}
 
+        {/* ── Chatbot from main ── */}
         {useLlm && (
           <Chat
             onSearchTerm={(val) => {
