@@ -336,7 +336,7 @@ def generate_rabbit_hole(start_article, additional_keywords, postings_model, pat
     # Changed to branch nodes as frontend expects many branch nodes for each rabbit hole. 
     branch_nodes = []
 
-    description = "A unique thematic cluster."
+    description = "Your person to explore!"
 
     if randomize:
         np.random.shuffle(pathway)
