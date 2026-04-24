@@ -103,7 +103,7 @@ def register_rag_route(app, run_pipeline):
         summary = ""
 
         # Step 1: rewrite the query (best-effort — fall back to original on failure)
-        api_key = os.getenv("API_KEY")
+        api_key = os.getenv("SPARK_API_KEY")
         client = LLMClient(api_key=api_key) if api_key else None
 
         if client:
