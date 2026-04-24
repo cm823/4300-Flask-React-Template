@@ -346,7 +346,7 @@ def generate_rabbit_hole(start_article, additional_keywords, postings_model, pat
         np.random.shuffle(pathway)
 
     for i in range(0, path_length*num_branches, path_length):
-        nodes = pathway
+        nodes = pathway[i:i+path_length]
         temp = []
         for doc_id in nodes:
             if doc_id not in REVERSE_DOC_MAP:
@@ -481,7 +481,7 @@ def generate_rabbit_hole_svd(start_article, path_length=5, num_branches=3):
                     "text" : text
                 }
             )
-            if len(temp) >= path_length:
+            if len(temp) >= path_length + 1:
                 break
         branch_nodes.append(temp)
 
@@ -527,7 +527,8 @@ def generate_rabbit_hole_combined(start_article, additional_keywords, postings_m
                     doc_scores[doc_id] += score
     print("done processing tokens")
     print(len(doc_scores))
-    sorted_scores = sorted(doc_scores.items(), key=lambda x: x[1], reverse=True)[:100 + 20 * (5-path_length)]
+    candidate_pool = max(path_length * 20, 200)
+    sorted_scores = sorted(doc_scores.items(), key=lambda x: x[1], reverse=True)[:candidate_pool]
     print(len(sorted_scores))
 
     doc_cos_results = []
@@ -538,14 +539,17 @@ def generate_rabbit_hole_combined(start_article, additional_keywords, postings_m
         if doc_id not in REVERSE_DOC_MAP:
             continue
         title = REVERSE_DOC_MAP.get(doc_id, f"Unknown ID {doc_id}")
-        try:
-            text = Articles.query.filter_by(article_name=title).first().article_text
-        except Exception as e:
-            text = ""
         if title.startswith("Unknown ID"):
             continue
         if title in non_people_articles:
             continue
+        # skip docs not present in the SVD vocab
+        if title not in DOC_IDS_SVD_REVERSE:
+            continue
+        try:
+            text = Articles.query.filter_by(article_name=title).first().article_text
+        except Exception as e:
+            text = ""
         doc_cos_results.append({
             "id" : doc_id,
             "title" : title,
@@ -555,6 +559,9 @@ def generate_rabbit_hole_combined(start_article, additional_keywords, postings_m
             "text": text
         })
     print("done jsonifying")
+
+    if not doc_cos_results:
+        return []
 
     doc_cos_results.sort(key=lambda x: x["score"], reverse=True)
 
