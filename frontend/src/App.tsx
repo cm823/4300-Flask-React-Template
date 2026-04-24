@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import "./App.css";
 import Chat from "./Chat";
 import mountain from "./assets/mountain2.png";
-import rabbitImg from "../../assets/rabbithole.png";
+import rabbitImg from "./assets/rabbithole.png";
 // IMPORT from our new Scroll Journey component
 import { BranchScrollJourney, TunnelCanvas } from "./ArticleScrollJourney";
 
