@@ -173,10 +173,10 @@ function AggregateRadar({ nodes, color }: { nodes: ArticleNode[]; color: string 
 }
 
 /* ─── Asset imports ──────────────────────────────────────────────────────── */
-import eggImg from "../../assets/egg.png";
-import cardImg from "../../assets/card.png";
-import roseImg from "../../assets/rose.png";
-import bunnyImg from "../../assets/bunny.png";
+import eggImg from "./assets/egg.png";
+import cardImg from "./assets/card.png";
+import roseImg from "./assets/rose.png";
+import bunnyImg from "./assets/bunny.png";
 
 const ALL_IMGS = [eggImg, cardImg, roseImg, bunnyImg];
 
