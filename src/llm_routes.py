@@ -52,8 +52,8 @@ def rewrite_query(client, original_query):
                 "You are a search query optimizer for a Wikipedia discovery engine. "
                 "Given a user query, do the following:\n"
                 "1. Identify the most important keywords in the query.\n"
-                "2. Find meaningful synonyms or related terms for each keyword.\n"
-                "3. Return the original query with those synonyms added to it.\n"
+                "2. Find meaningful synonyms or related terms for each keyword. Pay special attention to keywords referencing nationality\n"
+                "3. Using the original query and the meaningful synonyms, form a query that includes both all of these words and relevant bigrams or trigrams.\n"
                 "Return only the expanded query — no explanation, no bullet points, no punctuation at the end."
             ),
         },

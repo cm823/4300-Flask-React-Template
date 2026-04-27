@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import "./App.css";
-import Chat from "./Chat";
 import mountain from "./assets/mountain2.png";
 import rabbitImg from "./assets/rabbithole.png";
 // IMPORT from our new Scroll Journey component
@@ -539,16 +538,6 @@ export default function App(): JSX.Element {
             onSurface={handleSurface}
             onArticleChange={setCurrentArticleIndex}
             scoringMode={scoringMode}
-          />
-        )}
-
-        {/* ── Chatbot from main ── */}
-        {useLlm && (
-          <Chat
-            onSearchTerm={(val) => {
-              setArticle(val);
-              handleSearch();
-            }}
           />
         )}
       </div>

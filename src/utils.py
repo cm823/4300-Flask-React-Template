@@ -12,7 +12,36 @@ import random
 vecdot = np.vdot
 
 non_people_articles = {
-    "Alligatoridae"
+    "Alligatoridae",
+    "Santander UK",
+    "Triumph TR7",
+    "Arthur C. Clarke Award",
+    "Masimo",
+    "Vaio",
+    "Zoho Corporation",
+    "Atlas Copco",
+    "Autodesk",
+    "Bangbros",
+    "Kioxia",
+    "Hellfire Club (comics)",
+    "Solanaceae",
+    "Amaranthaceae",
+    "Enterobacteriaceae",
+    "Zoropsis spinimana",
+    "Jatropha",
+    "Tarantula",
+    "Acanthonyx",
+    "Malabar Hill",
+    "Florsheim Shoes",
+    "Araliaceae",
+    "Philodendron",
+    "Heteroptera",
+    "Potentilla",
+    "Acacia sensu lato",
+    "Amaryllidaceae",
+    "Acacia",
+    "Campanula rapunculus",
+
 }
 
 stemmer = PorterStemmer()
@@ -20,72 +49,72 @@ stemmed_stopwords = set(list({stemmer.stem(w) for w in ENGLISH_STOP_WORDS}) \
                      + ['anywh', 'becau', 'el', 'elsewh', 'everywh', 'ind', 'otherwi', 'plea', 'somewh'])
 
 dimension_themes = {
-    0:  "Film & Television 1",
-    1:  "Film & Television 2",
-    2:  "Music 1",
-    3:  "Music 2",
-    4:  "Film & Television 3",
-    5:  "Basketball",
-    6:  "Football & Team Sports 1",
+    0:  "Film, Television & Sports",
+    1:  "Film & Television 1",
+    2:  "Music and the Military",
+    3:  "Music 1",
+    4:  "Basketball 1",
+    5:  "Basketball/Film",
+    6:  "Sports 1",
     7:  "Baseball",
-    8:  "Politics & Government 1",
+    8:  "Literature",
     9:  "Film & Television 3",
-    10: "Combat Sports & Wrestling 1",
+    10: "Sports Champions 1",
     11: "Ice Hockey 1",
-    12: "Film & Television 4",
+    12: "Indian Cinema & South Asian 1",
     13: "Ice Hockey 2",
-    14: "Music 3",
-    15: "Indian Cinema & South Asian 1",
+    14: "Music 2",
+    15: "Nationality - American 1",
     16: "Broadcasting & Journalism 1",
-    17: "Football & Team Sports 2",
-    18: "Literature & Academia 1",
-    19: "Geography – New York 1",
+    17: "Sports and Politics",
+    18: "Media 1",
+    19: "Nationality - American 2",
     20: "Combat Sports & Wrestling 2",
     21: "Football & Team Sports 3",
     22: "Broadcasting & Journalism 2",
     23: "Literature & Academia 2",
     24: "Politics & Government 2",
-    25: "Cricket",
+    25: "Nationality - American 3",
     26: "Film & Television 5",
     27: "Film & Television 6",
-    28: "Music 4",
-    29: "Geography – New York 2",
+    28: "Music 3",
+    29: "Military History",
     30: "Crime & Legal",
     31: "Motor Racing",
-    32: "Broadcasting & Journalism 3",
+    32: "Media 2",
     33: "Business & Corporate 1",
-    34: "Fashion & Modelling 1",
-    35: "Indian Cinema & South Asian 2",
+    34: "Media 3",
+    35: "Indian Cinema & South Asian 3",
     36: "Olympics & Athletics 1",
     37: "Politics & Government 3",
     38: "Australian Sports & Rugby 1",
     39: "Fashion & Modelling 2",
     40: "Politics & Government 4",
     41: "Broadcasting & Journalism 4",
-    42: "Music 5",
+    42: "Music 4",
     43: "Animation, Gaming & Comics 1",
-    44: "Music 6",
+    44: "Music 5",
     45: "Theatre & Stage 1",
     46: "Animation, Gaming & Comics 2",
     47: "Australian Sports & Rugby 2",
     48: "Animation, Gaming & Comics 3",
     49: "Olympics & Athletics 2",
-    50: "Nationality – British 1",
-    51: "Nationality – British 2",
-    52: "Nationality – British 3",
+    50: "Ancient and Modern Empires 1",
+    51: "Ancient and Modern Empires 2",
+    52: "Nationality – British 1",
     53: "Literature & Academia 3",
     54: "Nationality – North American 1",
-    55: "Animation, Gaming & Comics 4",
-    56: "Indian Cinema & South Asian 3",
-    57: "Music 7",
+    55: "Media 4",
+    56: "Indian Cinema & South Asian 4",
+    57: "Music 6",
     58: "Nationality – Central European 1",
     59: "Nationality – North American 2",
-    60: "Nationality – French 1",
-    61: "Indian Cinema & South Asian 4",
+    60: "Nationality – Western/Southern Europe",
+    61: "Indian Cinema & South Asian 5",
     62: "Nationality – French/Canadian",
     63: "Nationality – North American 3",
-    64: "Nationality – British 4",
-    65: "Indian Cinema & South Asian 5",
+    64: "Nationality – British 2",
+    65: "Indian Cinema & South Asian 6",
     66: "Nationality – North American 4",
     67: "Animation, Gaming & Comics 5",
     68: "Nationality – North American 5",
@@ -93,25 +122,25 @@ dimension_themes = {
     70: "Nationality – South/Japanese",
     71: "Broadcasting & Journalism 5",
     72: "Geography – Western United States 1",
-    73: "Nationality – British 5",
+    73: "English-Speaking World",
     74: "Geography – Western United States 2",
-    75: "Nationality – Australian/Japanese",
-    76: "Nationality – Japanese 1",
+    75: "Media 5",
+    76: "Business & Corporate 3",
     77: "Theatre & Stage 3",
     78: "Nationality – Japanese/German",
     79: "Nationality – Western Europe",
     80: "Nationality – South African",
     81: "Business & Corporate 2",
     82: "Nationality – French 2",
-    83: "Nationality – Japanese/Canadian",
-    84: "Theatre & Stage 4",
-    85: "Boxing",
+    83: "Art and Fashion",
+    84: "Ancient History",
+    85: "Sports Champions 2",
     86: "Nationality – Japanese 2",
     87: "Broadcasting & Journalism 6",
     88: "Nationality – French/Chinese",
     89: "Nationality – Central European 2",
     90: "Nationality – New Zealand",
-    91: "Music 8",
+    91: "Music 7",
     92: "Golf",
     93: "Literature & Academia 4",
     94: "Middle East & Iran",
@@ -119,7 +148,7 @@ dimension_themes = {
     96: "Nationality – Irish",
     97: "Nationality – Italian",
     98: "Nationality – Central European 3",
-    99: "Nationality – Centran European 4",
+    99: "Nationality – South/Central European 4",
 }
 
 DOC_MAP = {}
@@ -345,7 +374,9 @@ def generate_rabbit_hole(start_article, additional_keywords, postings_model, pat
     if randomize:
         np.random.shuffle(pathway)
 
-    for i in range(0, path_length*num_branches, path_length):
+    for i in range(0, path_length*num_branches+len(non_people_articles), path_length):
+        if len(temp) >= path_length:
+            break
         nodes = pathway[i:i+path_length]
         temp = []
         for doc_id in nodes:
@@ -394,9 +425,14 @@ def generate_branch(doc_id, doc_vec, doc_embed, term_embed, path_length=5):
 
     return path
 
-def top_query_dimensions(q_emb, top_k=5):
-    # sort by magnitude (important: absolute value)
-    idx = np.argsort(np.abs(q_emb))[::-1][:top_k]
+def top_query_dimensions(q_emb, top_k=3):
+    # sort by magnitude
+
+    # suppressing some dimensions that don't have a very clear topic
+    q_emb[56] = -10000
+    for i in range(90, 100):
+        q_emb[i] = -10000
+    idx = np.argsort(q_emb)[::-1][:top_k]
 
     return [(i, q_emb[i]) for i in idx]
 
@@ -425,13 +461,13 @@ def generate_rabbit_hole_svd(start_article, path_length=5, num_branches=3):
 
     scores = DOC_EMBEDDINGS @ q_emb
 
-    top_idx = np.argsort(scores)[-(path_length*num_branches):][::-1]
+    top_idx = np.argsort(scores)[-(path_length*num_branches+len(non_people_articles)):][::-1]
 
     np.random.shuffle(top_idx)
 
     branch_nodes = []
 
-    description = "A unique thematic cluster."
+    description = ""
 
     for i in range(0, path_length * num_branches, path_length):
         nodes = top_idx
@@ -533,7 +569,7 @@ def generate_rabbit_hole_combined(start_article, additional_keywords, postings_m
 
     doc_cos_results = []
 
-    description = "A unique thematic cluster."
+    description = ""
 
     for doc_id, score in sorted_scores:
         if doc_id not in REVERSE_DOC_MAP:
@@ -582,14 +618,14 @@ def generate_rabbit_hole_combined(start_article, additional_keywords, postings_m
 
     print("done svding")
 
-    final_scores = 0.8 * cos_scores + 0.2 * svd_scores
+    final_scores = 0.5 * cos_scores + 0.5 * svd_scores
 
     for i in range(len(doc_cos_results)):
         doc_cos_results[i]["score"] = round(float(final_scores[i]), 4)
 
     doc_cos_results.sort(key=lambda x: x["score"], reverse=True)
 
-    final_results = doc_cos_results[:path_length*2]
+    final_results = doc_cos_results[:path_length*2+len(non_people_articles)]
 
     random.shuffle(final_results)
 
@@ -603,6 +639,7 @@ def generate_rabbit_hole_combined(start_article, additional_keywords, postings_m
             "dimensionScores" : dim_scores,
             "text" : ""
         })
+    print(final_results[0])
 
     for result in final_results[1:path_length+1]:
         doc_vec = TERM_EMBEDDINGS @ (SINGULAR_VALUES * DOC_EMBEDDINGS[result["id"], :])
