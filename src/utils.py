@@ -41,6 +41,7 @@ non_people_articles = {
     "Amaryllidaceae",
     "Acacia",
     "Campanula rapunculus",
+    "Banana Wars"
 
 }
 
@@ -369,17 +370,19 @@ def generate_rabbit_hole(start_article, additional_keywords, postings_model, pat
     # Changed to branch nodes as frontend expects many branch nodes for each rabbit hole. 
     branch_nodes = []
 
-    description = "Your person to explore!"
+    description = ""
 
     if randomize:
         np.random.shuffle(pathway)
 
     for i in range(0, path_length*num_branches+len(non_people_articles), path_length):
-        if len(temp) >= path_length:
+        if branch_nodes:
             break
-        nodes = pathway[i:i+path_length]
+        nodes = pathway[i:i+path_length+len(non_people_articles)]
         temp = []
         for doc_id in nodes:
+            if len(temp) >= path_length:
+                break
             if doc_id not in REVERSE_DOC_MAP:
                 continue
             title = REVERSE_DOC_MAP.get(doc_id, f"Unknown ID {doc_id}")
@@ -430,6 +433,7 @@ def top_query_dimensions(q_emb, top_k=3):
 
     # suppressing some dimensions that don't have a very clear topic
     q_emb[56] = -10000
+    q_emb[0] = -10000
     for i in range(90, 100):
         q_emb[i] = -10000
     idx = np.argsort(q_emb)[::-1][:top_k]
