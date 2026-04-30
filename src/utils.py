@@ -43,7 +43,10 @@ non_people_articles = {
     "Campanula rapunculus",
     "Banana Wars",
     "Gacha Game",
-    "Wolf–Rayet star"
+    "Wolf–Rayet star",
+    "Cunard Line",
+    "Kogi State",
+    "Wuyue"
 
 }
 
