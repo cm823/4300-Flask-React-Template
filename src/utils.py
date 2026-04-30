@@ -41,7 +41,9 @@ non_people_articles = {
     "Amaryllidaceae",
     "Acacia",
     "Campanula rapunculus",
-    "Banana Wars"
+    "Banana Wars",
+    "Gacha Game",
+    "Wolf–Rayet star"
 
 }
 
